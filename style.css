@@ -201,18 +201,39 @@ body[data-theme="dark"] button {
   transition: background 0.5s ease, color 0.5s ease;
 }
 
-/* Hourly forecast scroll bar tweaks */
+/* Hourly forecast scroll bar tweaks and layout */
+
 #hourlyForecast {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 8px;
+  overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: #888 transparent;
-  overflow-x: auto;
 }
 
 #hourlyForecast::-webkit-scrollbar {
-  height: 6px;
+  height: 8px;
 }
 
 #hourlyForecast::-webkit-scrollbar-thumb {
   background: #888;
-  border-radius: 3px;
+  border-radius: 4px;
+}
+
+#hourlyForecast .day {
+  flex: 0 0 auto;
+  min-width: 90px;
+  background: rgba(255 255 255 / 0.3);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  user-select: none;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  transition: background-color 0.3s ease;
+  color: inherit;
+}
+
+#hourlyForecast .day:hover {
+  background: rgba(255 255 255 / 0.5);
 }

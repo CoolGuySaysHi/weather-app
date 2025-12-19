@@ -10,9 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const favList = document.getElementById("favorites");
   const darkBtn = document.getElementById("toggleDark");
 
+  const DateTime = luxon.DateTime;
+
   let lastCity = null;
 
-  // Weather code → human words
   function getWeatherDescription(code, isNight) {
     if (code === 0) return isNight ? "🌙 Clear Night" : "☀️ Sunny";
     if (code <= 3) return "🌤️ Cloudy";
@@ -23,69 +24,56 @@ document.addEventListener("DOMContentLoaded", () => {
     return "⛈️ Stormy";
   }
 
-  // Fetch weather + 5-day forecast + hourly forecast
   function fetchWeather(lat, lon, placeName) {
     lastCity = placeName;
 
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,weathercode&hourly=temperature_2m,weathercode&timezone=auto`)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,weathercode,sunrise,sunset&hourly=temperature_2m,weathercode&timezone=auto`)
       .then(res => res.json())
       .then(data => {
         const w = data.current_weather;
+        const timezone = data.timezone;
 
-        // Get local hour from API time string
-        const localTime = new Date(w.time);
-        const hour = localTime.getHours();
+        const dt = DateTime.fromISO(w.time, { zone: timezone });
 
-        // Night between 7pm and 6am
-        const isNight = (hour >= 19 || hour <= 6);
+        const sunrise = DateTime.fromISO(data.daily.sunrise[0], { zone: timezone });
+        const sunset = DateTime.fromISO(data.daily.sunset[0], { zone: timezone });
 
-        // Determine weather text & background class
-        let weatherText = "";
-        let bgClass = "";
+        const isNight = dt < sunrise || dt > sunset;
 
-        if (w.weathercode === 0) {
-          if (isNight) {
-            weatherText = "🌙 Clear Night";
-            bgClass = "clear-night";
-          } else {
-            weatherText = "☀️ Sunny";
-            bgClass = "sunny";
-          }
-        } else if (w.weathercode <= 3 || (w.weathercode >= 45 && w.weathercode <= 48)) {
-          weatherText = "🌤️ Cloudy";
-          bgClass = "cloudy";
-        } else if (w.weathercode <= 67) {
-          weatherText = "🌧️ Rainy";
-          bgClass = "rainy";
-        } else if (w.weathercode <= 77) {
-          weatherText = "❄️ Snowy";
-          bgClass = "snowy";
+        // Clear all previous weather & day/night classes
+        document.body.classList.remove("day", "night", "sunny", "clear-night", "cloudy", "rainy", "snowy", "foggy", "showers", "stormy");
+
+        // Add day or night class
+        if (isNight) {
+          document.body.classList.add("night");
         } else {
-          weatherText = "⛈️ Stormy";
-          bgClass = "";
+          document.body.classList.add("day");
         }
+
+        // Determine weather class for backgrounds
+        let weatherClass = "";
+        if (w.weathercode === 0) {
+          weatherClass = isNight ? "clear-night" : "sunny";
+        } else if (w.weathercode <= 3 || (w.weathercode >= 45 && w.weathercode <= 48)) {
+          weatherClass = "cloudy";
+        } else if (w.weathercode <= 67) {
+          weatherClass = "rainy";
+        } else if (w.weathercode <= 77) {
+          weatherClass = "snowy";
+        } else if (w.weathercode <= 82) {
+          weatherClass = "showers";
+        } else {
+          weatherClass = "stormy";
+        }
+        document.body.classList.add(weatherClass);
+
+        const weatherText = getWeatherDescription(w.weathercode, isNight);
 
         output.textContent =
           `📍 ${placeName}
 ${weatherText}
 🌡️ ${w.temperature}°C
 💨 Wind: ${w.windspeed} km/h`;
-
-        // Update body classes and data-theme attribute
-        document.body.className = "";
-        if (bgClass) document.body.classList.add(bgClass);
-
-        const isDarkMode = document.body.classList.contains("dark");
-
-        if (isDarkMode) {
-          document.body.setAttribute("data-theme", "dark");
-        } else if (bgClass === "sunny" || bgClass === "clear-night") {
-          document.body.setAttribute("data-theme", "light-bg");
-        } else if (["rainy", "cloudy", "snowy"].includes(bgClass)) {
-          document.body.setAttribute("data-theme", "dark-bg");
-        } else {
-          document.body.setAttribute("data-theme", "light-bg");
-        }
 
         // 5-day forecast
         forecastDiv.innerHTML = "";
@@ -102,42 +90,40 @@ ${weatherText}
         // Hourly forecast (next 24 hours)
         hourlyDiv.innerHTML = "";
 
-        const nowIndex = data.hourly.time.findIndex(t => new Date(t) >= new Date());
+        // Find current hour index
+        const nowIndex = data.hourly.time.findIndex(t => DateTime.fromISO(t, { zone: timezone }) >= dt);
 
         for (let i = nowIndex; i < nowIndex + 24 && i < data.hourly.time.length; i++) {
-          const time = new Date(data.hourly.time[i]);
-          const hourStr = time.getHours().toString().padStart(2, '0') + ":00";
+          const time = DateTime.fromISO(data.hourly.time[i], { zone: timezone });
+          const hourStr = time.toFormat("HH':'mm");
 
-          // For hourly, night/day detection per hour
-          const hr = time.getHours();
-          const hrIsNight = (hr >= 19 || hr <= 6);
+          // Check night for each hour
+          const hrIsNight = time < sunrise || time > sunset;
 
           hourlyDiv.innerHTML += `
-            <div class="day" style="min-width: 80px;">
+            <div class="day" title="${time.toLocaleString(DateTime.DATETIME_MED)}">
               ⏰ ${hourStr}<br>
               ${getWeatherDescription(data.hourly.weathercode[i], hrIsNight)}<br>
               🌡️ ${data.hourly.temperature_2m[i]}°C
             </div>
           `;
         }
-
       })
       .catch(() => {
         output.textContent = "Weather failed ☁️";
       });
   }
 
-  // City search
   searchBtn.addEventListener("click", () => {
     const city = cityInput.value.trim();
     if (!city) return;
 
     output.textContent = "Searching city… 🗺️";
 
-    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`)
+    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
       .then(res => res.json())
       .then(data => {
-        if (!data.results) throw new Error();
+        if (!data.results || data.results.length === 0) throw new Error();
         const p = data.results[0];
         fetchWeather(p.latitude, p.longitude, `${p.name}, ${p.country}`);
       })
@@ -146,7 +132,6 @@ ${weatherText}
       });
   });
 
-  // Auto-location
   locationBtn.addEventListener("click", () => {
     if (!navigator.geolocation) {
       output.textContent = "Location not supported 😬";
@@ -167,7 +152,6 @@ ${weatherText}
     );
   });
 
-  // Save favourite
   saveFavBtn.addEventListener("click", () => {
     if (!lastCity) return;
 
@@ -179,7 +163,6 @@ ${weatherText}
     }
   });
 
-  // Load favourites
   function loadFavorites() {
     favList.innerHTML = "";
     const favs = JSON.parse(localStorage.getItem("favorites")) || [];
@@ -195,7 +178,6 @@ ${weatherText}
     });
   }
 
-  // Dark mode toggle
   if (localStorage.getItem("darkMode") === "true") {
     document.body.classList.add("dark");
     document.body.setAttribute("data-theme", "dark");

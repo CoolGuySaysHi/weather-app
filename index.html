@@ -1,35 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Weather App</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Weather App</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Luxon for timezone-aware date/time parsing -->
+<script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
 
-  <link rel="stylesheet" href="style.css">
+<!-- External stylesheet -->
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <h1>🌦️ Weather App</h1>
+<h1>Weather App</h1>
 
-  <button id="toggleDark">🌙 Dark Mode</button>
+<input id="cityInput" placeholder="Enter city name" />
+<button id="searchBtn">Search</button>
+<button id="getWeather">Use My Location</button>
+<button id="saveFav">Save Favourite ⭐</button>
+<button id="toggleDark"> 🌙 Dark Mode</button>
 
-  <input id="cityInput" type="text" placeholder="Enter a city" />
-  <button id="searchBtn">Search</button>
-  <button id="getWeather">Use My Location</button>
-  <button id="saveFav">⭐ Save Favourite</button>
+<pre id="output">Waiting for weather magic…</pre>
 
-  <p id="output">Waiting for weather magic…</p>
+<div id="forecast"></div>
+<h3>Hourly Forecast (Next 24h):</h3>
+<div id="hourlyForecast"></div>
 
-  <h2>📅 5-Day Forecast</h2>
-  <div id="forecast"></div>
+<h3>Favourites:</h3>
+<ul id="favorites"></ul>
 
-  <h2>⏰ Hourly Forecast (Next 24 Hours)</h2>
-  <div id="hourlyForecast" style="display: flex; overflow-x: auto; gap: 10px; padding: 10px 0;"></div>
-
-  <h2>⭐ Favourites</h2>
-  <ul id="favourites"></ul>
-
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
