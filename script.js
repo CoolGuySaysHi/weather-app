@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const output = document.getElementById("output");
   const forecastDiv = document.getElementById("forecast");
   const hourlyDiv = document.getElementById("hourlyForecast");
-  const favList = document.getElementById("favorites");
+  const favList = document.getElementById("favourites");
   const darkBtn = document.getElementById("toggleDark");
 
   let lastCity = null;
@@ -136,10 +136,10 @@ ${getWeatherDescription(w.weathercode)}
   saveFavBtn.addEventListener("click", () => {
     if (!lastCity) return;
 
-    const favs = JSON.parse(localStorage.getItem("favorites")) || [];
+    const favs = JSON.parse(localStorage.getItem("favourites")) || [];
     if (!favs.includes(lastCity)) {
       favs.push(lastCity);
-      localStorage.setItem("favorites", JSON.stringify(favs));
+      localStorage.setItem("favourites", JSON.stringify(favs));
       loadFavorites();
     }
   });
@@ -147,7 +147,7 @@ ${getWeatherDescription(w.weathercode)}
   // Load favorites
   function loadFavorites() {
     favList.innerHTML = "";
-    const favs = JSON.parse(localStorage.getItem("favorites")) || [];
+    const favs = JSON.parse(localStorage.getItem("favourites")) || [];
 
     favs.forEach(city => {
       const li = document.createElement("li");
@@ -173,6 +173,6 @@ ${getWeatherDescription(w.weathercode)}
     );
   });
 
-  loadFavorites();
+  loadFavourites();
 
 });
