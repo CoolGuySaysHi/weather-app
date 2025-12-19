@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const output = document.getElementById("output");
   const forecastDiv = document.getElementById("forecast");
   const hourlyDiv = document.getElementById("hourlyForecast");
-  const favList = document.getElementById("favourites");
+  const favList = document.getElementById("favorites");
   const darkBtn = document.getElementById("toggleDark");
 
   let lastCity = null;
@@ -32,21 +32,28 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(data => {
         const w = data.current_weather;
 
-        // Remove any previous weather classes
-        document.body.classList.remove("sunny", "rainy", "cloudy", "snowy");
+        // Decide weather background class
+        let bgClass = "";
+        if (w.weathercode === 0) bgClass = "sunny";
+        else if (w.weathercode <= 3 || (w.weathercode >= 45 && w.weathercode <= 48)) bgClass = "cloudy";
+        else if (w.weathercode <= 67) bgClass = "rainy";
+        else if (w.weathercode <= 77) bgClass = "snowy";
+        else bgClass = "";
 
-        // Add class based on weather code
-        if (w.weathercode === 0) {
-          document.body.classList.add("sunny");
-        } else if (w.weathercode <= 3 || (w.weathercode >= 45 && w.weathercode <= 48)) {
-          document.body.classList.add("cloudy");
-        } else if (w.weathercode <= 67) {
-          document.body.classList.add("rainy");
-        } else if (w.weathercode <= 77) {
-          document.body.classList.add("snowy");
+        // Set body classes and data-theme attribute
+        document.body.className = ""; // clear all classes
+        if (bgClass) document.body.classList.add(bgClass);
+
+        const isDarkMode = document.body.classList.contains("dark");
+
+        if (isDarkMode) {
+          document.body.setAttribute("data-theme", "dark");
+        } else if (bgClass === "sunny") {
+          document.body.setAttribute("data-theme", "light-bg");
+        } else if (["rainy", "cloudy", "snowy"].includes(bgClass)) {
+          document.body.setAttribute("data-theme", "dark-bg");
         } else {
-          // default or stormy: remove classes to fallback default bg
-          document.body.style.background = "";
+          document.body.setAttribute("data-theme", "light-bg");
         }
 
         output.textContent =
@@ -70,7 +77,6 @@ ${getWeatherDescription(w.weathercode)}
         // Hourly forecast (next 24 hours)
         hourlyDiv.innerHTML = "";
 
-        // Find first hour >= now
         const nowIndex = data.hourly.time.findIndex(t => new Date(t) >= new Date());
 
         for (let i = nowIndex; i < nowIndex + 24 && i < data.hourly.time.length; i++) {
@@ -132,22 +138,22 @@ ${getWeatherDescription(w.weathercode)}
     );
   });
 
-  // Save favorite
+  // Save favourite
   saveFavBtn.addEventListener("click", () => {
     if (!lastCity) return;
 
-    const favs = JSON.parse(localStorage.getItem("favourites")) || [];
+    const favs = JSON.parse(localStorage.getItem("favorites")) || [];
     if (!favs.includes(lastCity)) {
       favs.push(lastCity);
-      localStorage.setItem("favourites", JSON.stringify(favs));
+      localStorage.setItem("favorites", JSON.stringify(favs));
       loadFavorites();
     }
   });
 
-  // Load favorites
+  // Load favourites
   function loadFavorites() {
     favList.innerHTML = "";
-    const favs = JSON.parse(localStorage.getItem("favourites")) || [];
+    const favs = JSON.parse(localStorage.getItem("favorites")) || [];
 
     favs.forEach(city => {
       const li = document.createElement("li");
@@ -160,19 +166,29 @@ ${getWeatherDescription(w.weathercode)}
     });
   }
 
-  // Dark mode
+  // Dark mode toggle
   if (localStorage.getItem("darkMode") === "true") {
     document.body.classList.add("dark");
+    document.body.setAttribute("data-theme", "dark");
   }
 
   darkBtn.addEventListener("click", () => {
     document.body.classList.toggle("dark");
-    localStorage.setItem(
-      "darkMode",
-      document.body.classList.contains("dark")
-    );
+    const isDark = document.body.classList.contains("dark");
+    if (isDark) {
+      document.body.setAttribute("data-theme", "dark");
+    } else {
+      // Reset data-theme based on bgClass
+      // Just trigger a search to refresh styles
+      if (lastCity) {
+        searchBtn.click();
+      } else {
+        document.body.setAttribute("data-theme", "light-bg");
+      }
+    }
+    localStorage.setItem("darkMode", isDark);
   });
 
-  loadFavourites();
+  loadFavorites();
 
 });

@@ -40,42 +40,6 @@ li {
   margin: 6px;
 }
 
-/* 🌙 DARK MODE */
-body.dark {
-  background: #121212;
-  color: #e0e0e0; /* Main text color */
-}
-
-body.dark #output,
-body.dark #forecast,
-body.dark #hourlyForecast,
-body.dark #favorites,
-body.dark h1, 
-body.dark h2,
-body.dark p,
-body.dark li,
-body.dark .day {
-  color: #e0e0e0; /* Make sure text inside these containers is light */
-}
-
-/* Also update .day backgrounds for better contrast */
-body.dark .day {
-  background: #1e1e1e;
-  color: #e0e0e0;
-}
-
-/* Buttons & inputs */
-body.dark input,
-body.dark button {
-  background: #333;
-  color: #e0e0e0;
-}
-
-body.dark button:hover {
-  background: #444;
-}
-
-
 /* 📱 MOBILE FRIENDLY */
 @media (max-width: 600px) {
 
@@ -159,10 +123,82 @@ body.snowy {
   color: #222;
 }
 
+/* THEME-BASED TEXT COLOUR */
+
+body[data-theme="light-bg"] {
+  color: #222;
+}
+
+body[data-theme="light-bg"] .day,
+body[data-theme="light-bg"] #output,
+body[data-theme="light-bg"] #hourlyForecast,
+body[data-theme="light-bg"] #forecast,
+body[data-theme="light-bg"] #favorites,
+body[data-theme="light-bg"] h1,
+body[data-theme="light-bg"] h2,
+body[data-theme="light-bg"] p,
+body[data-theme="light-bg"] li {
+  color: #222;
+  transition: color 0.5s ease;
+}
+
+body[data-theme="dark-bg"] {
+  color: #e0e0e0;
+}
+
+body[data-theme="dark-bg"] .day,
+body[data-theme="dark-bg"] #output,
+body[data-theme="dark-bg"] #hourlyForecast,
+body[data-theme="dark-bg"] #forecast,
+body[data-theme="dark-bg"] #favorites,
+body[data-theme="dark-bg"] h1,
+body[data-theme="dark-bg"] h2,
+body[data-theme="dark-bg"] p,
+body[data-theme="dark-bg"] li {
+  color: #e0e0e0;
+  transition: color 0.5s ease;
+}
+
+/* Dark mode overrides */
+body[data-theme="dark"] {
+  background: #121212 !important;
+  color: #e0e0e0 !important;
+  transition: background 1s ease, color 1s ease;
+}
+
+body[data-theme="dark"] .day {
+  background: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+
+/* Buttons & inputs */
+
+body[data-theme="light-bg"] input,
+body[data-theme="light-bg"] button {
+  background: #fff;
+  color: #000;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+body[data-theme="dark-bg"] input,
+body[data-theme="dark-bg"] button {
+  background: #333;
+  color: #e0e0e0;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+body[data-theme="dark"] input,
+body[data-theme="dark"] button {
+  background: #333;
+  color: #e0e0e0;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
 /* Hourly forecast scroll bar tweaks */
 #hourlyForecast {
   scrollbar-width: thin;
   scrollbar-color: #888 transparent;
+  overflow-x: auto;
 }
 
 #hourlyForecast::-webkit-scrollbar {
