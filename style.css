@@ -123,6 +123,13 @@ body.snowy {
   color: #222;
 }
 
+/* Night */
+body.clear-night {
+  background: linear-gradient(135deg, #0b0c22, #1a1b3d);
+  color: #ccd6f6;
+  animation: none;
+}
+
 /* THEME-BASED TEXT COLOUR */
 
 body[data-theme="light-bg"] {

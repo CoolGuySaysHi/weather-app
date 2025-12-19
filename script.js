@@ -13,8 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastCity = null;
 
   // Weather code → human words
-  function getWeatherDescription(code) {
-    if (code === 0) return "☀️ Sunny";
+  function getWeatherDescription(code, isNight) {
+    if (code === 0) return isNight ? "🌙 Clear Night" : "☀️ Sunny";
     if (code <= 3) return "🌤️ Cloudy";
     if (code <= 48) return "🌫️ Foggy";
     if (code <= 67) return "🌧️ Rainy";
@@ -32,23 +32,54 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(data => {
         const w = data.current_weather;
 
-        // Decide weather background class
-        let bgClass = "";
-        if (w.weathercode === 0) bgClass = "sunny";
-        else if (w.weathercode <= 3 || (w.weathercode >= 45 && w.weathercode <= 48)) bgClass = "cloudy";
-        else if (w.weathercode <= 67) bgClass = "rainy";
-        else if (w.weathercode <= 77) bgClass = "snowy";
-        else bgClass = "";
+        // Get local hour from API time string
+        const localTime = new Date(w.time);
+        const hour = localTime.getHours();
 
-        // Set body classes and data-theme attribute
-        document.body.className = ""; // clear all classes
+        // Night between 7pm and 6am
+        const isNight = (hour >= 19 || hour <= 6);
+
+        // Determine weather text & background class
+        let weatherText = "";
+        let bgClass = "";
+
+        if (w.weathercode === 0) {
+          if (isNight) {
+            weatherText = "🌙 Clear Night";
+            bgClass = "clear-night";
+          } else {
+            weatherText = "☀️ Sunny";
+            bgClass = "sunny";
+          }
+        } else if (w.weathercode <= 3 || (w.weathercode >= 45 && w.weathercode <= 48)) {
+          weatherText = "🌤️ Cloudy";
+          bgClass = "cloudy";
+        } else if (w.weathercode <= 67) {
+          weatherText = "🌧️ Rainy";
+          bgClass = "rainy";
+        } else if (w.weathercode <= 77) {
+          weatherText = "❄️ Snowy";
+          bgClass = "snowy";
+        } else {
+          weatherText = "⛈️ Stormy";
+          bgClass = "";
+        }
+
+        output.textContent =
+          `📍 ${placeName}
+${weatherText}
+🌡️ ${w.temperature}°C
+💨 Wind: ${w.windspeed} km/h`;
+
+        // Update body classes and data-theme attribute
+        document.body.className = "";
         if (bgClass) document.body.classList.add(bgClass);
 
         const isDarkMode = document.body.classList.contains("dark");
 
         if (isDarkMode) {
           document.body.setAttribute("data-theme", "dark");
-        } else if (bgClass === "sunny") {
+        } else if (bgClass === "sunny" || bgClass === "clear-night") {
           document.body.setAttribute("data-theme", "light-bg");
         } else if (["rainy", "cloudy", "snowy"].includes(bgClass)) {
           document.body.setAttribute("data-theme", "dark-bg");
@@ -56,19 +87,13 @@ document.addEventListener("DOMContentLoaded", () => {
           document.body.setAttribute("data-theme", "light-bg");
         }
 
-        output.textContent =
-          `📍 ${placeName}
-${getWeatherDescription(w.weathercode)}
-🌡️ ${w.temperature}°C
-💨 Wind: ${w.windspeed} km/h`;
-
         // 5-day forecast
         forecastDiv.innerHTML = "";
         for (let i = 0; i < 5; i++) {
           forecastDiv.innerHTML += `
             <div class="day">
               📅 ${data.daily.time[i]}<br>
-              ${getWeatherDescription(data.daily.weathercode[i])}<br>
+              ${getWeatherDescription(data.daily.weathercode[i], false)}<br>
               🌡️ ${data.daily.temperature_2m_max[i]}°C
             </div>
           `;
@@ -83,10 +108,14 @@ ${getWeatherDescription(w.weathercode)}
           const time = new Date(data.hourly.time[i]);
           const hourStr = time.getHours().toString().padStart(2, '0') + ":00";
 
+          // For hourly, night/day detection per hour
+          const hr = time.getHours();
+          const hrIsNight = (hr >= 19 || hr <= 6);
+
           hourlyDiv.innerHTML += `
             <div class="day" style="min-width: 80px;">
               ⏰ ${hourStr}<br>
-              ${getWeatherDescription(data.hourly.weathercode[i])}<br>
+              ${getWeatherDescription(data.hourly.weathercode[i], hrIsNight)}<br>
               🌡️ ${data.hourly.temperature_2m[i]}°C
             </div>
           `;
@@ -178,8 +207,6 @@ ${getWeatherDescription(w.weathercode)}
     if (isDark) {
       document.body.setAttribute("data-theme", "dark");
     } else {
-      // Reset data-theme based on bgClass
-      // Just trigger a search to refresh styles
       if (lastCity) {
         searchBtn.click();
       } else {
