@@ -43,22 +43,38 @@ li {
 /* 🌙 DARK MODE */
 body.dark {
   background: #121212;
+  color: #e0e0e0; /* Main text color */
+}
+
+body.dark #output,
+body.dark #forecast,
+body.dark #hourlyForecast,
+body.dark #favorites,
+body.dark h1, 
+body.dark h2,
+body.dark p,
+body.dark li,
+body.dark .day {
+  color: #e0e0e0; /* Make sure text inside these containers is light */
+}
+
+/* Also update .day backgrounds for better contrast */
+body.dark .day {
+  background: #1e1e1e;
   color: #e0e0e0;
 }
 
-body.dark .day {
-  background: #1e1e1e;
-}
-
+/* Buttons & inputs */
 body.dark input,
 body.dark button {
   background: #333;
-  color: #fff;
+  color: #e0e0e0;
 }
 
 body.dark button:hover {
   background: #444;
 }
+
 
 /* 📱 MOBILE FRIENDLY */
 @media (max-width: 600px) {
