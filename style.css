@@ -5,6 +5,7 @@ body {
   color: #000;
   text-align: center;
   padding: 30px;
+  transition: background 1s ease, color 1s ease;
 }
 
 input, button {
@@ -88,4 +89,56 @@ body.dark button:hover {
   h2 {
     font-size: 22px;
   }
+}
+
+/* Animated backgrounds */
+
+@keyframes sunnyAnimation {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes rainyAnimation {
+  0% { background-color: #5a7db1; }
+  50% { background-color: #4a6ba1; }
+  100% { background-color: #5a7db1; }
+}
+
+@keyframes cloudyAnimation {
+  0%, 100% { background-color: #bbb; }
+  50% { background-color: #999; }
+}
+
+@keyframes snowyAnimation {
+  0%, 100% { background-color: #dff0f7; }
+  50% { background-color: #b0d8f7; }
+}
+
+/* Sunny */
+body.sunny {
+  background: linear-gradient(270deg, #fceabb, #f8b500, #fceabb);
+  background-size: 600% 600%;
+  animation: sunnyAnimation 15s ease infinite;
+  color: #222;
+}
+
+/* Rainy */
+body.rainy {
+  animation: rainyAnimation 6s ease infinite;
+  color: #eef4f7;
+  background: linear-gradient(135deg, #4a6ba1, #34527a);
+}
+
+/* Cloudy */
+body.cloudy {
+  animation: cloudyAnimation 10s ease infinite;
+  background: linear-gradient(135deg, #bbb, #999);
+  color: #333;
+}
+
+/* Snowy */
+body.snowy {
+  animation: snowyAnimation 12s ease infinite;
+  background: linear-gradient(135deg, #dff0f7, #b0d8f7);
+  color: #222;
 }

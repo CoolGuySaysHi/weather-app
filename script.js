@@ -31,6 +31,23 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(data => {
         const w = data.current_weather;
 
+        // Remove any previous weather classes
+        document.body.classList.remove("sunny", "rainy", "cloudy", "snowy");
+
+        // Add class based on weather code
+        if (w.weathercode === 0) {
+          document.body.classList.add("sunny");
+        } else if (w.weathercode <= 3 || (w.weathercode >= 45 && w.weathercode <= 48)) {
+          document.body.classList.add("cloudy");
+        } else if (w.weathercode <= 67) {
+          document.body.classList.add("rainy");
+        } else if (w.weathercode <= 77) {
+          document.body.classList.add("snowy");
+        } else {
+          // default or stormy: remove classes to fallback default bg
+          document.body.style.background = "";
+        }
+
         output.textContent =
           `📍 ${placeName}
 ${getWeatherDescription(w.weathercode)}
