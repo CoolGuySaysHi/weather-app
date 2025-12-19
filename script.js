@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveFavBtn = document.getElementById("saveFav");
   const output = document.getElementById("output");
   const forecastDiv = document.getElementById("forecast");
+  const hourlyDiv = document.getElementById("hourlyForecast");
   const favList = document.getElementById("favorites");
   const darkBtn = document.getElementById("toggleDark");
 
@@ -22,11 +23,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return "⛈️ Stormy";
   }
 
-  // Fetch weather + 5-day forecast
+  // Fetch weather + 5-day forecast + hourly forecast
   function fetchWeather(lat, lon, placeName) {
     lastCity = placeName;
 
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,weathercode&timezone=auto`)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,weathercode&hourly=temperature_2m,weathercode&timezone=auto`)
       .then(res => res.json())
       .then(data => {
         const w = data.current_weather;
@@ -54,6 +55,7 @@ ${getWeatherDescription(w.weathercode)}
 🌡️ ${w.temperature}°C
 💨 Wind: ${w.windspeed} km/h`;
 
+        // 5-day forecast
         forecastDiv.innerHTML = "";
         for (let i = 0; i < 5; i++) {
           forecastDiv.innerHTML += `
@@ -64,6 +66,26 @@ ${getWeatherDescription(w.weathercode)}
             </div>
           `;
         }
+
+        // Hourly forecast (next 24 hours)
+        hourlyDiv.innerHTML = "";
+
+        // Find first hour >= now
+        const nowIndex = data.hourly.time.findIndex(t => new Date(t) >= new Date());
+
+        for (let i = nowIndex; i < nowIndex + 24 && i < data.hourly.time.length; i++) {
+          const time = new Date(data.hourly.time[i]);
+          const hourStr = time.getHours().toString().padStart(2, '0') + ":00";
+
+          hourlyDiv.innerHTML += `
+            <div class="day" style="min-width: 80px;">
+              ⏰ ${hourStr}<br>
+              ${getWeatherDescription(data.hourly.weathercode[i])}<br>
+              🌡️ ${data.hourly.temperature_2m[i]}°C
+            </div>
+          `;
+        }
+
       })
       .catch(() => {
         output.textContent = "Weather failed ☁️";
