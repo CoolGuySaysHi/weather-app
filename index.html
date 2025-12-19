@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Weather App</title>
+
+  <!-- VERY IMPORTANT FOR MOBILE -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>🌦️ Weather App</h1>
+
+  <button id="toggleDark">🌙 Dark Mode</button>
+
+  <input id="cityInput" type="text" placeholder="Enter a city" />
+  <button id="searchBtn">Search</button>
+  <button id="getWeather">Use My Location</button>
+  <button id="saveFav">⭐ Save Favorite</button>
+
+  <p id="output">Waiting for weather magic…</p>
+
+  <h2>📅 5-Day Forecast</h2>
+  <div id="forecast"></div>
+
+  <h2>⭐ Favorites</h2>
+  <ul id="favorites"></ul>
+
+  <script src="script.js"></script>
+</body>
+</html>

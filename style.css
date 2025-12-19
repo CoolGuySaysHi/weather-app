@@ -1,0 +1,91 @@
+/* 🌞 LIGHT MODE */
+body {
+  font-family: Arial, sans-serif;
+  background: #e3f2fd;
+  color: #000;
+  text-align: center;
+  padding: 30px;
+}
+
+input, button {
+  padding: 10px;
+  margin: 6px;
+  border-radius: 6px;
+  border: none;
+  font-size: 16px;
+}
+
+button {
+  cursor: pointer;
+}
+
+#forecast {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.day {
+  background: white;
+  padding: 10px;
+  border-radius: 6px;
+  width: 120px;
+}
+
+li {
+  list-style: none;
+  cursor: pointer;
+  margin: 6px;
+}
+
+/* 🌙 DARK MODE */
+body.dark {
+  background: #121212;
+  color: #e0e0e0;
+}
+
+body.dark .day {
+  background: #1e1e1e;
+}
+
+body.dark input,
+body.dark button {
+  background: #333;
+  color: #fff;
+}
+
+body.dark button:hover {
+  background: #444;
+}
+
+/* 📱 MOBILE FRIENDLY */
+@media (max-width: 600px) {
+
+  body {
+    padding: 15px;
+  }
+
+  input, button {
+    width: 100%;
+    margin: 6px 0;
+    font-size: 18px;
+  }
+
+  #forecast {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .day {
+    width: 90%;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+}
