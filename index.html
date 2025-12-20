@@ -1,35 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Weather App</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weather App</title>
 
-<!-- Luxon for timezone-aware date/time parsing -->
-<script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css" />
 
-<!-- External stylesheet -->
-<link rel="stylesheet" href="style.css" />
+  <!-- Luxon for timezones -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+
+  <!-- App logic -->
+  <script src="script.js" defer></script>
 </head>
+
 <body>
+  <div class="app">
+    <h1>Weather App</h1>
 
-<h1>Weather App</h1>
+    <input
+      id="cityInput"
+      type="text"
+      placeholder="Enter a city"
+      autocomplete="off"
+    />
 
-<input id="cityInput" placeholder="Enter city name" />
-<button id="searchBtn">Search</button>
-<button id="getWeather">Use My Location</button>
-<button id="saveFav">Save Favourite ⭐</button>
-<button id="toggleDark"> 🌙 Dark Mode</button>
+    <div>
+      <button id="searchBtn">Search</button>
+      <button id="getWeather">Use My Location</button>
+    </div>
 
-<pre id="output">Waiting for weather magic…</pre>
+    <div>
+      <button id="saveFav">Save Favourite ⭐</button>
+      <button id="toggleDark">🌙 Dark Mode</button>
+    </div>
 
-<div id="forecast"></div>
-<h3>Hourly Forecast (Next 24h):</h3>
-<div id="hourlyForecast"></div>
+    <pre id="output">Waiting for weather magic…</pre>
 
-<h3>Favourites:</h3>
-<ul id="favorites"></ul>
+    <h2>5-Day Forecast</h2>
+    <div id="forecast"></div>
 
-<script src="script.js"></script>
+    <h2>Hourly Forecast</h2>
+    <div id="hourlyForecast"></div>
+
+    <h2>Favourites</h2>
+    <ul id="favorites"></ul>
+  </div>
+
+  <!-- extra rain stream layer -->
+  <div class="rain-layer"></div>
 </body>
 </html>
