@@ -1,24 +1,35 @@
 /* =========================
-   BASIC LAYOUT
+   BASE RESET
+========================= */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #e3f2fd;
+  color: #111;
+  text-align: center;
+  padding: 30px;
+  overflow-x: hidden;
+  transition: background 0.6s ease, color 0.4s ease;
+}
+
+/* =========================
+   APP CONTAINER
 ========================= */
 
 .app {
   max-width: 420px;
-  margin: 0 auto;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  background: #e3f2fd;
-  color: #000;
-  text-align: center;
-  padding: 30px;
-  transition: background 1s ease, color 1s ease;
-  overflow-x: hidden;
+  margin: auto;
+  position: relative;
+  z-index: 5;
 }
 
 /* =========================
-   INPUTS & BUTTONS
+   CONTROLS
 ========================= */
 
 input, button {
@@ -34,14 +45,45 @@ button {
 }
 
 /* =========================
+   WEATHER SUMMARY
+========================= */
+
+.weather-output {
+  margin: 16px auto;
+  padding: 12px 16px;
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+.weather-output .line {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+/* =========================
    FORECAST CARDS
 ========================= */
 
 #forecast {
   display: flex;
-  justify-content: center;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+#hourlyForecast {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 12px 6px;
+  scroll-snap-type: x mandatory;
+}
+
+#hourlyForecast .day {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
 }
 
 .day {
@@ -49,97 +91,102 @@ button {
   padding: 10px;
   border-radius: 8px;
   width: 120px;
-  color: #1a1a1a;
-}
-
-#hourlyForecast {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 10px 0;
-}
-
-#hourlyForecast .day {
-  min-width: 110px;
-  background: rgba(255,255,255,0.85);
+  color: #111;
 }
 
 /* =========================
-   MOBILE
+   ANIMATION LAYERS
 ========================= */
 
-@media (max-width: 600px) {
-  body { padding: 15px; }
-  input, button { width: 100%; font-size: 18px; }
-  .day { width: 90%; }
+.weather-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* =========================
-   WEATHER BACKGROUNDS
+   SUNNY
 ========================= */
 
 body.sunny {
   background: linear-gradient(270deg, #fceabb, #f8b500, #fceabb);
   background-size: 600% 600%;
-  animation: sunnyAnim 15s ease infinite;
+  animation: sunnyMove 15s ease infinite;
 }
 
-@keyframes sunnyAnim {
+@keyframes sunnyMove {
   0%,100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
 
-body.cloudy {
-  background: linear-gradient(135deg, #cfcfcf, #b0b0b0);
-  animation: cloudyAnim 10s ease infinite;
-}
-
-@keyframes cloudyAnim {
-  0%,100% { background-color: #cfcfcf; }
-  50% { background-color: #b0b0b0; }
-}
-
-body.snowy {
-  background: linear-gradient(135deg, #dff0f7, #b0d8f7);
-  animation: snowyAnim 12s ease infinite;
-}
-
-@keyframes snowyAnim {
-  0%,100% { background-color: #dff0f7; }
-  50% { background-color: #b0d8f7; }
-}
-
-body.clear-night {
-  background: linear-gradient(135deg, #0b0c22, #1a1b3d);
-  color: #ccd6f6;
-}
-
 /* =========================
-   STARS (NIGHT)
+   CLOUDY (VISIBLE MOVEMENT)
 ========================= */
 
-body.clear-night::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(2px 2px at 20% 30%, white, transparent),
-    radial-gradient(1.5px 1.5px at 80% 40%, white, transparent),
-    radial-gradient(1px 1px at 50% 70%, white, transparent),
-    radial-gradient(1.2px 1.2px at 30% 80%, white, transparent);
-  opacity: 0.8;
-  animation: stars 6s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
+body.cloudy {
+  background: #bcbcbc;
 }
 
-@keyframes stars {
-  0%,100% { opacity: 0.6; }
-  50% { opacity: 1; }
+body.cloudy .weather-layer {
+  background:
+    radial-gradient(circle at 10% 30%, rgba(255,255,255,0.9) 0 22%, transparent 28%),
+    radial-gradient(circle at 40% 50%, rgba(255,255,255,0.8) 0 26%, transparent 34%),
+    radial-gradient(circle at 70% 35%, rgba(255,255,255,0.85) 0 24%, transparent 32%);
+  filter: blur(24px);
+  animation: cloudsMove 40s linear infinite;
+}
+
+@keyframes cloudsMove {
+  from { transform: translateX(-10%); }
+  to   { transform: translateX(10%); }
 }
 
 /* =========================
-   🌧️ RAIN (FULL SCREEN, STAGGERED)
+   SNOW (CLEAR FALLING)
+========================= */
+
+body.snowy {
+  background: #dbeeff;
+}
+
+body.snowy .weather-layer {
+  background: transparent;
+}
+
+body.snowy .weather-layer::before {
+  content: "";
+  position: absolute;
+  top: -100vh;
+  left: 0;
+  width: 3px;
+  height: 3px;
+  background: white;
+  border-radius: 50%;
+  box-shadow:
+    5vw 0,
+    12vw 20vh,
+    18vw 40vh,
+    26vw 60vh,
+    34vw 30vh,
+    42vw 50vh,
+    50vw 10vh,
+    58vw 35vh,
+    66vw 70vh,
+    74vw 25vh,
+    82vw 45vh,
+    90vw 15vh,
+    98vw 55vh;
+  animation: snowFall 14s linear infinite;
+}
+
+@keyframes snowFall {
+  from { transform: translateY(-100vh) translateX(0); }
+  to   { transform: translateY(200vh) translateX(6vw); }
+}
+
+/* =========================
+   RAIN
 ========================= */
 
 body.rainy {
@@ -147,16 +194,14 @@ body.rainy {
   color: #eef4f7;
 }
 
-/* FAST STREAM */
-body.rainy::after {
+body.rainy .weather-layer::before {
   content: "";
-  position: fixed;
+  position: absolute;
   top: -60vh;
   left: 0;
   width: 1px;
   height: 140px;
   background: transparent;
-
   box-shadow:
     5vw 0 rgba(255,255,255,.6),
     15vw 40px rgba(255,255,255,.5),
@@ -168,122 +213,86 @@ body.rainy::after {
     75vw 50px rgba(255,255,255,.5),
     85vw -40px rgba(255,255,255,.6),
     95vw 20px rgba(255,255,255,.5);
-
-  animation: rainFast var(--rain-speed, 0.7s) linear infinite;
-  pointer-events: none;
-  z-index: 0;
+  animation: rainFall 0.8s linear infinite;
 }
 
-/* MEDIUM STREAM */
-body.rainy::before {
-  content: "";
-  position: fixed;
-  top: -60vh;
-  left: 0;
-  width: 1px;
-  height: 160px;
-  background: transparent;
-
-  box-shadow:
-    10vw 0 rgba(255,255,255,.45),
-    22vw 80px rgba(255,255,255,.4),
-    34vw -60px rgba(255,255,255,.45),
-    48vw 100px rgba(255,255,255,.4),
-    62vw -40px rgba(255,255,255,.45),
-    76vw 60px rgba(255,255,255,.4),
-    90vw -20px rgba(255,255,255,.45);
-
-  animation: rainMedium 1.2s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* SLOW / SPARSE STREAM */
-.rain-layer {
-  position: fixed;
-  top: -60vh;
-  left: 0;
-  width: 1px;
-  height: 180px;
-  background: transparent;
-
-  box-shadow:
-    18vw 0 rgba(255,255,255,.35),
-    38vw 140px rgba(255,255,255,.3),
-    58vw -80px rgba(255,255,255,.35),
-    78vw 100px rgba(255,255,255,.3),
-    92vw -40px rgba(255,255,255,.35);
-
-  animation: rainSlow 1.8s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Rain animations (vertical + slight drift) */
-@keyframes rainFast {
-  from { transform: translateY(-140vh); }
-  to   { transform: translateY(140vh); }
-}
-
-@keyframes rainMedium {
-  from { transform: translateY(-140vh); }
-  to   { transform: translateY(140vh); }
-}
-
-@keyframes rainSlow {
+@keyframes rainFall {
   from { transform: translateY(-140vh); }
   to   { transform: translateY(140vh); }
 }
 
 /* =========================
-   KEEP UI ABOVE EFFECTS
+   CLEAR NIGHT + STARS
 ========================= */
 
-.app, h1, h2, h3, p, pre, input, button,
-#forecast, #hourlyForecast, ul, li {
-  position: relative;
-  z-index: 2;
+body.clear-night {
+  background: linear-gradient(135deg, #0b0c22, #1a1b3d);
+  color: #ccd6f6;
 }
+
+body.clear-night .weather-layer {
+  background:
+    radial-gradient(2px 2px at 20% 30%, white, transparent),
+    radial-gradient(1.5px 1.5px at 80% 40%, white, transparent),
+    radial-gradient(1px 1px at 50% 70%, white, transparent);
+  animation: starsTwinkle 6s ease-in-out infinite;
+}
+
+@keyframes starsTwinkle {
+  0%,100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
 /* =========================
-   🌙 DARK MODE (FIXED)
+   UV BADGE (RESTORED)
+========================= */
+
+.uv-badge {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.uv-main {
+  font-size: 1em;
+}
+
+.uv-advice {
+  font-size: 0.85em;
+  margin-top: 4px;
+}
+
+.uv-low { background: #2ecc71; color: #000; }
+.uv-moderate { background: #f1c40f; color: #000; }
+.uv-high { background: #e67e22; color: #000; }
+.uv-very-high { background: #e74c3c; color: #fff; }
+.uv-extreme { background: #8e44ad; color: #fff; }
+
+/* =========================
+   DARK MODE
 ========================= */
 
 body[data-theme="dark"] {
-  background: #121212 !important;
-  color: #e0e0e0 !important;
+  background: #121212;
+  color: #e0e0e0;
 }
 
-/* Kill weather backgrounds in dark mode */
-body[data-theme="dark"].sunny,
-body[data-theme="dark"].cloudy,
-body[data-theme="dark"].snowy,
-body[data-theme="dark"].rainy,
-body[data-theme="dark"].clear-night {
-  background: #121212 !important;
-  animation: none !important;
-}
-
-/* Remove visual overlays in dark mode */
-body[data-theme="dark"]::before,
-body[data-theme="dark"]::after,
-body[data-theme="dark"] .rain-layer {
-  display: none !important;
-}
-
-/* Cards */
 body[data-theme="dark"] .day {
   background: #1e1e1e;
   color: #e0e0e0;
 }
 
-/* Inputs & buttons */
-body[data-theme="dark"] input,
-body[data-theme="dark"] button {
-  background: #2a2a2a;
-  color: #e0e0e0;
+/* =========================
+   SCROLLBAR
+========================= */
+
+#hourlyForecast::-webkit-scrollbar {
+  height: 8px;
 }
 
-/* Scrollbar (optional polish) */
-body[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #555;
+#hourlyForecast::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.4);
+  border-radius: 4px;
 }

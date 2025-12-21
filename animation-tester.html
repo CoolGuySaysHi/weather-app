@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wind + Rain Animation Tester</title>
+
+  <!-- Use your REAL weather CSS -->
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    /* Tester UI only */
+    body { min-height: 100vh; }
+
+    .tester-panel {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(520px, calc(100% - 20px));
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 12px;
+      border-radius: 12px;
+      z-index: 9999;
+      display: grid;
+      gap: 10px;
+      font-family: Arial, sans-serif;
+    }
+
+    .tester-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .tester-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tester-buttons button {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .slider {
+      width: 100%;
+    }
+
+    .value-pill {
+      background: rgba(255,255,255,0.15);
+      padding: 6px 10px;
+      border-radius: 999px;
+      min-width: 84px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hint {
+      opacity: 0.85;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tester-panel">
+    <div class="tester-buttons">
+      <button type="button" onclick="setWeather('sunny')">☀️ Sunny</button>
+      <button type="button" onclick="setWeather('cloudy')">☁️ Cloudy</button>
+      <button type="button" onclick="setWeather('snowy')">❄️ Snowy</button>
+      <button type="button" onclick="setWeather('clear-night')">🌙 Night</button>
+      <button type="button" onclick="setWeather('rainy')">🌧️ Rain</button>
+      <button type="button" onclick="resetAll()">🔄 Reset</button>
+    </div>
+
+    <div class="tester-row">
+      <input id="wind" class="slider" type="range" min="0" max="60" step="1" value="10" />
+      <div id="windVal" class="value-pill">10 km/h</div>
+    </div>
+
+    <div class="tester-row">
+      <input id="intensity" class="slider" type="range" min="0.25" max="1.4" step="0.05" value="0.85" />
+      <div id="intensityVal" class="value-pill">0.85x</div>
+    </div>
+
+    <div class="hint">
+      Wind changes rain <b>tilt</b> + <b>speed</b>. Intensity changes rain <b>opacity</b>.
+      Use “🌧️ Rain” first, then drag the sliders.
+    </div>
+  </div>
+
+  <script>
+    const windSlider = document.getElementById("wind");
+    const windVal = document.getElementById("windVal");
+
+    const intensitySlider = document.getElementById("intensity");
+    const intensityVal = document.getElementById("intensityVal");
+
+    // Default to rain so the slider does something immediately
+    setWeather("rainy");
+
+    function setWeather(type) {
+      // Remove weather classes
+      document.body.classList.remove("sunny", "cloudy", "snowy", "clear-night", "rainy");
+
+      // Apply requested weather class
+      if (type) document.body.classList.add(type);
+
+      // Set theme attribute for testing readability
+      if (type === "clear-night") {
+        document.body.setAttribute("data-theme", "dark-bg");
+      } else if (type === "rainy" || type === "cloudy") {
+        document.body.setAttribute("data-theme", "dark-bg");
+      } else {
+        document.body.setAttribute("data-theme", "light-bg");
+      }
+
+      updateWind();
+      updateIntensity();
+    }
+
+    function resetAll() {
+      document.body.className = "";
+      document.body.removeAttribute("data-theme");
+      document.body.style.removeProperty("--rain-tilt");
+      document.body.style.removeProperty("--rain-speed");
+      document.body.style.removeProperty("--rain-opacity");
+      windSlider.value = 10;
+      intensitySlider.value = 0.85;
+      updateWind();
+      updateIntensity();
+    }
+
+    function updateWind() {
+      const wind = Number(windSlider.value);
+      windVal.textContent = `${wind} km/h`;
+
+      // Tilt and speed mapping (same idea as your app)
+      const tilt = Math.min(wind * 1.2, 20);          // degrees
+      const speed = Math.max(0.35, 1 - wind / 40);    // seconds
+
+      document.body.style.setProperty("--rain-tilt", `${tilt}deg`);
+      document.body.style.setProperty("--rain-speed", `${speed}s`);
+    }
+
+    function updateIntensity() {
+      const mult = Number(intensitySlider.value);
+      intensityVal.textContent = `${mult.toFixed(2)}x`;
+
+      // Optional extra variable: opacity control for rain overlay
+      document.body.style.setProperty("--rain-opacity", String(mult));
+      // If your CSS doesn't use this yet, add:
+      // body.rainy::after { opacity: var(--rain-opacity, 0.85); }
+    }
+
+    windSlider.addEventListener("input", updateWind);
+    intensitySlider.addEventListener("input", updateIntensity);
+  </script>
+
+</body>
+</html>

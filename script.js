@@ -1,9 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   const DateTime = luxon.DateTime;
 
-  // =========================
-  // ELEMENTS
-  // =========================
+  /* =========================
+     ELEMENTS
+  ========================= */
   const cityInput = document.getElementById("cityInput");
   const searchBtn = document.getElementById("searchBtn");
   const locationBtn = document.getElementById("getWeather");
@@ -17,19 +17,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let lastCity = null;
 
-  // =========================
-  // WEATHER HELPERS
-  // =========================
-
-  function getWeatherDescription(code, isNight) {
-    if (code === 0) return isNight ? "Clear night" : "Sunny";
-    if (code <= 3) return "Cloudy";
-    if (code <= 48) return "Foggy";
-    if (code <= 67) return "Rainy";
-    if (code <= 77) return "Snowy";
-    if (code <= 82) return "Showers";
-    return "Stormy";
-  }
+  /* =========================
+     HELPERS
+  ========================= */
 
   function clearWeatherClasses() {
     document.body.classList.remove(
@@ -41,32 +31,76 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  function applyRainWind(windSpeed) {
-    const tilt = Math.min(windSpeed * 0.6, 12);
-    const speed = Math.max(0.5, 1.2 - windSpeed / 40);
+  function getWeatherClass(code, isNight) {
+    if (code === 0) return isNight ? "clear-night" : "sunny";
+    if (code <= 3 || code <= 48) return "cloudy";
+    if (code <= 67 || code <= 82) return "rainy";
+    if (code <= 77) return "snowy";
+    return "cloudy";
+  }
 
-    document.body.style.setProperty("--rain-tilt", `${tilt}px`);
+  function applyRainWind(windSpeed) {
+    const speed = Math.max(0.6, 1.3 - windSpeed / 40);
     document.body.style.setProperty("--rain-speed", `${speed}s`);
   }
 
-  function setTheme(isNight) {
+function uvBadge(uv, temp) {
+  let level = "Low";
+  let cls = "uv-low";
+  let advice = "No suncream needed (unless you're a vampire 🧛‍♂️)";
+
+  // Base UV level
+  if (uv >= 3) { level = "Moderate"; cls = "uv-moderate"; }
+  if (uv >= 6) { level = "High"; cls = "uv-high"; }
+  if (uv >= 8) { level = "Very High"; cls = "uv-very-high"; }
+  if (uv >= 11) { level = "Extreme"; cls = "uv-extreme"; }
+
+  // Combined UV + temperature advice
+  if (uv >= 3 || temp >= 18) {
+    advice = "SPF 15+ recommended 🧴";
+  }
+  if (uv >= 6 || temp >= 22) {
+    advice = "SPF 30+ strongly recommended 🧴";
+  }
+  if (uv >= 8 || temp >= 26) {
+    advice = "SPF 50+, hat & shade advised 😎";
+  }
+  if (uv >= 11 || temp >= 30) {
+    advice = "SPF 50+, avoid midday sun ☀️🚫";
+  }
+
+  return `
+    <div class="uv-badge ${cls}">
+      <div class="uv-main">☀️ UV ${uv} – ${level}</div>
+      <div class="uv-advice">${advice}</div>
+    </div>
+  `;
+}
+
+
+
+  
+
+
+  function setAutoTheme(isNight) {
     if (document.body.getAttribute("data-theme") === "dark") return;
     document.body.setAttribute("data-theme", isNight ? "dark-bg" : "light-bg");
   }
 
-  // =========================
-  // FETCH WEATHER
-  // =========================
+  /* =========================
+     FETCH WEATHER
+  ========================= */
 
   function fetchWeather(lat, lon, label) {
     lastCity = label;
+    output.textContent = "Loading weather… 🌍";
 
     fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-        `&current_weather=true` +
-        `&daily=weathercode,temperature_2m_max,sunrise,sunset` +
-        `&hourly=temperature_2m,precipitation_probability` +
-        `&timezone=auto`
+      `&current_weather=true` +
+      `&daily=weathercode,temperature_2m_max,sunrise,sunset,uv_index_max` +
+      `&hourly=temperature_2m,precipitation_probability` +
+      `&timezone=auto`
     )
       .then(res => res.json())
       .then(data => {
@@ -76,52 +110,45 @@ document.addEventListener("DOMContentLoaded", () => {
         const now = DateTime.fromISO(w.time, { zone });
         const sunrise = DateTime.fromISO(data.daily.sunrise[0], { zone });
         const sunset = DateTime.fromISO(data.daily.sunset[0], { zone });
-
         const isNight = now < sunrise || now > sunset;
 
         clearWeatherClasses();
 
-        let weatherClass = "cloudy";
-        if (w.weathercode === 0) {
-          weatherClass = isNight ? "clear-night" : "sunny";
-        } else if (w.weathercode <= 3 || w.weathercode <= 48) {
-          weatherClass = "cloudy";
-        } else if (w.weathercode <= 67) {
-          weatherClass = "rainy";
-        } else if (w.weathercode <= 77) {
-          weatherClass = "snowy";
-        }
-
+        const weatherClass = getWeatherClass(w.weathercode, isNight);
         document.body.classList.add(weatherClass);
-        setTheme(isNight);
+        setAutoTheme(isNight);
 
         if (weatherClass === "rainy") {
           applyRainWind(w.windspeed);
         }
 
-        output.textContent =
-          `📍 ${label}\n` +
-          `${getWeatherDescription(w.weathercode, isNight)}\n` +
-          `🌡️ ${w.temperature}°C\n` +
-          `💨 Wind: ${w.windspeed} km/h`;
+        const uv = data.daily.uv_index_max[0];
 
-        // =========================
-        // 5 DAY FORECAST
-        // =========================
+        output.innerHTML = `
+          <div class="line">📍 ${label}</div>
+          <div class="line">🌡️ ${w.temperature}°C</div>
+          <div class="line">💨 Wind: ${w.windspeed} km/h</div>
+          ${!isNight ? `<div class="line">${uvBadge(uv,w.temperature)}</div>` : ""}
+`       ;
+
+
+
+        /* =========================
+           5-DAY FORECAST
+        ========================= */
         forecastDiv.innerHTML = "";
         for (let i = 0; i < 5; i++) {
           forecastDiv.innerHTML += `
             <div class="day">
               ${data.daily.time[i]}<br>
-              ${getWeatherDescription(data.daily.weathercode[i], false)}<br>
               🌡️ ${data.daily.temperature_2m_max[i]}°C
             </div>
           `;
         }
 
-        // =========================
-        // HOURLY FORECAST (24H)
-        // =========================
+        /* =========================
+           HOURLY (NEXT 24H)
+        ========================= */
         hourlyDiv.innerHTML = "";
         const startIndex = data.hourly.time.findIndex(t =>
           DateTime.fromISO(t, { zone }) >= now
@@ -132,34 +159,27 @@ document.addEventListener("DOMContentLoaded", () => {
           i < startIndex + 24 && i < data.hourly.time.length;
           i++
         ) {
-          const t = DateTime.fromISO(data.hourly.time[i], { zone });
-          const time = t.toFormat("HH:mm");
-          const temp = data.hourly.temperature_2m[i];
-          const rain = data.hourly.precipitation_probability?.[i];
-
           hourlyDiv.innerHTML += `
             <div class="day">
-              ${time}<br>
-              🌡️ ${temp}°C<br>
-              ${rain !== undefined ? `🌧️ ${rain}%` : ""}
+              ${DateTime.fromISO(data.hourly.time[i], { zone }).toFormat("HH:mm")}<br>
+              🌡️ ${data.hourly.temperature_2m[i]}°C<br>
+              🌧️ ${data.hourly.precipitation_probability[i] ?? 0}%
             </div>
           `;
         }
       })
       .catch(() => {
-        output.textContent = "Failed to load weather ☁️";
+        output.textContent = "Weather failed to load ☁️";
       });
   }
 
-  // =========================
-  // SEARCH CITY
-  // =========================
+  /* =========================
+     SEARCH CITY
+  ========================= */
 
   searchBtn.addEventListener("click", () => {
     const city = cityInput.value.trim();
     if (!city) return;
-
-    output.textContent = "Searching… 🌍";
 
     fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
@@ -177,9 +197,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   });
 
-  // =========================
-  // MANUAL LOCATION BUTTON
-  // =========================
+  cityInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") searchBtn.click();
+  });
+
+  /* =========================
+     LOCATION
+  ========================= */
 
   locationBtn.addEventListener("click", () => {
     navigator.geolocation.getCurrentPosition(
@@ -196,17 +220,12 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 
-  // =========================
-  // AUTO LOCATION ON LOAD
-  // =========================
+  /* =========================
+     AUTO LOCATION ON LOAD
+  ========================= */
 
   window.addEventListener("load", () => {
-    if (!navigator.geolocation) {
-      output.textContent = "Geolocation not supported 😬";
-      return;
-    }
-
-    output.textContent = "Getting your location… 📍";
+    if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(
       pos => {
@@ -215,37 +234,34 @@ document.addEventListener("DOMContentLoaded", () => {
           pos.coords.longitude,
           "Your Location"
         );
-      },
-      () => {
-        output.textContent = "Allow location to auto-load weather 🌍";
       }
     );
   });
 
-  // =========================
-  // FAVOURITES
-  // =========================
+  /* =========================
+     FAVOURITES
+  ========================= */
 
-  function loadFavorites() {
+  function loadFavourites() {
     favList.innerHTML = "";
-    const favs = JSON.parse(localStorage.getItem("favorites")) || [];
+    const favs = JSON.parse(localStorage.getItem("favourites")) || [];
 
     favs.forEach((city, index) => {
       const li = document.createElement("li");
       li.textContent = city;
-      li.addEventListener("click", () => {
+      li.onclick = () => {
         cityInput.value = city;
         searchBtn.click();
-      });
+      };
 
       const remove = document.createElement("button");
       remove.textContent = "❌";
-      remove.addEventListener("click", e => {
+      remove.onclick = e => {
         e.stopPropagation();
         favs.splice(index, 1);
-        localStorage.setItem("favorites", JSON.stringify(favs));
-        loadFavorites();
-      });
+        localStorage.setItem("favourites", JSON.stringify(favs));
+        loadFavourites();
+      };
 
       li.appendChild(remove);
       favList.appendChild(li);
@@ -254,22 +270,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   saveFavBtn.addEventListener("click", () => {
     if (!lastCity) return;
-    const favs = JSON.parse(localStorage.getItem("favorites")) || [];
+    const favs = JSON.parse(localStorage.getItem("favourites")) || [];
     if (!favs.includes(lastCity)) {
       favs.push(lastCity);
-      localStorage.setItem("favorites", JSON.stringify(favs));
-      loadFavorites();
+      localStorage.setItem("favourites", JSON.stringify(favs));
+      loadFavourites();
     }
   });
 
-  // =========================
-  // DARK MODE
-  // =========================
+  /* =========================
+     DARK MODE (MANUAL OVERRIDE)
+  ========================= */
 
   darkBtn.addEventListener("click", () => {
-    const isDark = document.body.getAttribute("data-theme") === "dark";
-    document.body.setAttribute("data-theme", isDark ? "" : "dark");
+    const current = document.body.getAttribute("data-theme");
+    document.body.setAttribute(
+      "data-theme",
+      current === "dark" ? "light-bg" : "dark"
+    );
   });
 
-  loadFavorites();
+  loadFavourites();
 });

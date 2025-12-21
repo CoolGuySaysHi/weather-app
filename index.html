@@ -5,20 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Weather App</title>
 
-  <!-- Styles -->
+  <!-- Main stylesheet -->
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Luxon for timezones -->
+  <!-- Luxon (for timezones / sunrise / sunset) -->
   <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
 
-  <!-- App logic -->
+  <!-- Main script -->
   <script src="script.js" defer></script>
 </head>
 
 <body>
+
+  <!-- 🌦️ WEATHER ANIMATION LAYER (REQUIRED) -->
+  <div class="weather-layer"></div>
+
+  <!-- 🌤️ APP UI -->
   <div class="app">
+
     <h1>Weather App</h1>
 
+    <!-- City search -->
     <input
       id="cityInput"
       type="text"
@@ -36,19 +43,24 @@
       <button id="toggleDark">🌙 Dark Mode</button>
     </div>
 
-    <pre id="output">Waiting for weather magic…</pre>
+    <!-- Weather summary -->
+    <div id="output" class="weather-output">
+      Waiting for weather magic…
+    </div>
 
+    <!-- 5-day forecast -->
     <h2>5-Day Forecast</h2>
     <div id="forecast"></div>
 
-    <h2>Hourly Forecast</h2>
+    <!-- Hourly forecast -->
+    <h2>Hourly Forecast (Next 24h)</h2>
     <div id="hourlyForecast"></div>
 
+    <!-- Favourites -->
     <h2>Favourites</h2>
     <ul id="favorites"></ul>
+
   </div>
 
-  <!-- extra rain stream layer -->
-  <div class="rain-layer"></div>
 </body>
 </html>
