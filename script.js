@@ -1,65 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
   const DateTime = luxon.DateTime;
-  
-/* =========================
-   PWA UPDATE PROMPT
-========================= */
-
-let newWorker = null;
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    window.location.reload();
-  });
-
-  navigator.serviceWorker.getRegistration().then(reg => {
-    if (!reg) return;
-
-    if (reg.waiting) {
-      showUpdatePrompt(reg.waiting);
-    }
-
-    reg.addEventListener("updatefound", () => {
-      const installing = reg.installing;
-      installing.addEventListener("statechange", () => {
-        if (installing.state === "installed" && navigator.serviceWorker.controller) {
-          showUpdatePrompt(installing);
-        }
-      });
-    });
-  });
-}
-function showUpdatePrompt(worker) {
-  if (document.getElementById("updatePrompt")) return;
-
-  const banner = document.createElement("div");
-  banner.id = "updatePrompt";
-  banner.innerHTML = `
-    🔄 <strong>Nimbus update available</strong>
-    <button id="updateBtn">Refresh</button>
-  `;
-
-  Object.assign(banner.style, {
-    position: "fixed",
-    bottom: "16px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "#333",
-    color: "#fff",
-    padding: "12px 16px",
-    borderRadius: "8px",
-    zIndex: "9999",
-    display: "flex",
-    gap: "10px",
-    alignItems: "center"
-  });
-
-  document.body.appendChild(banner);
-
-  document.getElementById("updateBtn").onclick = () => {
-    worker.postMessage("SKIP_WAITING");
-  };
-}
 
   /* =========================
      ELEMENTS
@@ -74,19 +14,14 @@ function showUpdatePrompt(worker) {
   const hourlyDiv = document.getElementById("hourlyForecast");
 
   /* =========================
-     PWA: SERVICE WORKER
+     SERVICE WORKER
   ========================= */
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker
-        .register("/weather-app/sw.js")
-        .then(() => console.log("Nimbus PWA ready ☁️"))
-        .catch(err => console.log("Service Worker failed", err));
-    });
+    navigator.serviceWorker.register("/weather-app/sw.js");
   }
 
   /* =========================
-     DARK MODE (MANUAL OVERRIDE)
+     DARK MODE
   ========================= */
   if (localStorage.getItem("nimbus_dark") === "1") {
     document.body.classList.add("dark");
@@ -101,9 +36,8 @@ function showUpdatePrompt(worker) {
   });
 
   /* =========================
-     HELPERS
+     WEATHER CLASS HELPERS
   ========================= */
-
   function clearWeatherClasses() {
     document.body.classList.remove(
       "sunny",
@@ -132,6 +66,9 @@ function showUpdatePrompt(worker) {
     return "⛈️ Stormy";
   }
 
+  /* =========================
+     UV BADGE
+  ========================= */
   function uvBadge(uv, temp) {
     let cls = "uv-low";
     let advice = "No suncream needed (unless you're a vampire 🧛‍♂️)";
@@ -155,202 +92,121 @@ function showUpdatePrompt(worker) {
 
     return `
       <div class="uv-badge ${cls}">
-        <div class="uv-main">☀️ UV ${uv}</div>
-        <div class="uv-advice">${advice}</div>
+        <strong>☀️ UV ${uv}</strong><br>
+        <small>${advice}</small>
       </div>
     `;
   }
 
   /* =========================
-     WEATHER ALERTS
+     OUTSIDE SCORE
   ========================= */
+  function outsideScore(temp, rain, wind, uv) {
+    let score = 100;
+    const reasons = [];
 
-  function renderAlert(alerts) {
-    const old = document.getElementById("weatherAlert");
-    if (old) old.remove();
+    if (temp < 5) { score -= 30; reasons.push("very cold"); }
+    else if (temp < 10) { score -= 15; reasons.push("chilly"); }
+    else if (temp > 30) { score -= 30; reasons.push("very hot"); }
 
-    if (!alerts || !alerts.length) return;
+    if (rain > 70) { score -= 40; reasons.push("heavy rain likely"); }
+    else if (rain > 40) { score -= 20; reasons.push("chance of rain"); }
 
-    const alert = alerts[0];
-    let level = "yellow";
+    if (wind > 35) { score -= 25; reasons.push("very windy"); }
+    else if (wind > 20) { score -= 10; reasons.push("windy"); }
 
-    if (alert.severity === "moderate") level = "amber";
-    if (alert.severity === "severe" || alert.severity === "extreme")
-      level = "red";
+    if (uv >= 9) { score -= 15; reasons.push("very high UV"); }
 
-    const banner = document.createElement("div");
-    banner.id = "weatherAlert";
-    banner.className = `alert alert-${level}`;
-    banner.innerHTML = `
-      ⚠️ <strong>Weather Warning: ${alert.event}</strong><br>
-      ${alert.description}
+    if (score >= 70) return { text: "🟢 Great time to go outside", class: "outside-good", reason: "Conditions are looking good" };
+    if (score >= 40) return { text: "🟠 Okay, but be prepared", class: "outside-meh", reason: reasons.join(", ") };
+    return { text: "🔴 Probably stay inside", class: "outside-bad", reason: reasons.join(", ") };
+  }
+
+  /* =========================
+     RENDER WEATHER (ONLINE/OFFLINE)
+  ========================= */
+  function renderWeather(saved, isOffline) {
+    const data = saved.data;
+    const label = saved.label;
+
+    const w = data.current_weather;
+    const zone = data.timezone;
+
+    const now = DateTime.fromISO(w.time, { zone });
+    const sunrise = DateTime.fromISO(data.daily.sunrise[0], { zone });
+    const sunset = DateTime.fromISO(data.daily.sunset[0], { zone });
+    const isNight = now < sunrise || now > sunset;
+
+    clearWeatherClasses();
+    document.body.classList.add(getWeatherClass(w.weathercode, isNight));
+
+    const uv = data.daily.uv_index_max[0];
+    const rainSoon = data.hourly.precipitation_probability[0] ?? 0;
+    const outside = outsideScore(w.temperature, rainSoon, w.windspeed, uv);
+
+    output.innerHTML = `
+      <div class="line">📍 ${label}</div>
+      <div class="line">🌡️ ${w.temperature}°C</div>
+      <div class="line">💨 Wind: ${w.windspeed} km/h</div>
+      ${isOffline ? `<div class="line">📴 Offline mode</div>` : ""}
+      <div class="line">Last updated: ${new Date(saved.time).toLocaleTimeString()}</div>
+
+      ${!isNight ? `
+        <div class="outside-score ${outside.class}">
+          <strong>${outside.text}</strong><br>
+          <small>${outside.reason}</small>
+        </div>
+      ` : ""}
+
+      ${!isNight ? uvBadge(uv, w.temperature) : ""}
     `;
 
-    output.insertAdjacentElement("afterend", banner);
+    forecastDiv.innerHTML = "";
+    for (let i = 0; i < 5; i++) {
+      forecastDiv.innerHTML += `
+        <div class="day">
+          <strong>${DateTime.fromISO(data.daily.time[i]).toFormat("ccc")}</strong><br>
+          ${dailyWeatherLabel(data.daily.weathercode[i])}<br>
+          🌡️ ${data.daily.temperature_2m_max[i]}°C
+        </div>
+      `;
+    }
+
+    hourlyDiv.innerHTML = "";
+    for (let i = 0; i < 24; i++) {
+      hourlyDiv.innerHTML += `
+        <div class="day">
+          ${DateTime.fromISO(data.hourly.time[i], { zone }).toFormat("HH:mm")}<br>
+          🌡️ ${data.hourly.temperature_2m[i]}°C<br>
+          🌧️ ${data.hourly.precipitation_probability[i] ?? 0}%
+        </div>
+      `;
+    }
   }
-
-  function outsideScore(temp, rainChance, wind, uv) {
-  let score = 100;
-  const reasons = [];
-
-  // Temperature
-  if (temp < 5) {
-    score -= 30;
-    reasons.push("very cold");
-  } else if (temp < 10) {
-    score -= 15;
-    reasons.push("chilly");
-  } else if (temp > 30) {
-    score -= 30;
-    reasons.push("very hot");
-  }
-
-  // Rain
-  if (rainChance > 70) {
-    score -= 40;
-    reasons.push("heavy rain likely");
-  } else if (rainChance > 40) {
-    score -= 20;
-    reasons.push("chance of rain");
-  }
-
-  // Wind
-  if (wind > 35) {
-    score -= 25;
-    reasons.push("very windy");
-  } else if (wind > 20) {
-    score -= 10;
-    reasons.push("windy");
-  }
-
-  // UV
-  if (uv >= 9) {
-    score -= 15;
-    reasons.push("very high UV");
-  }
-
-  score = Math.max(score, 0);
-
-  if (score >= 70) {
-    return {
-      text: "🟢 Great time to go outside",
-      reason: "Conditions are looking good",
-      class: "outside-good"
-    };
-  }
-
-  if (score >= 40) {
-    return {
-      text: "🟠 Okay, but be prepared",
-      reason: reasons.join(", "),
-      class: "outside-meh"
-    };
-  }
-
-  return {
-    text: "🔴 Probably stay inside",
-    reason: reasons.join(", "),
-    class: "outside-bad"
-  };
-}
 
   /* =========================
      FETCH WEATHER
   ========================= */
-
   function fetchWeather(lat, lon, label) {
     output.textContent = "Nimbus is checking the sky… ☁️";
 
     fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-        `&current_weather=true` +
-        `&daily=weathercode,temperature_2m_max,sunrise,sunset,uv_index_max` +
-        `&hourly=temperature_2m,precipitation_probability` +
-        `&alerts=true` +
-        `&timezone=auto`
+      `&current_weather=true` +
+      `&daily=weathercode,temperature_2m_max,sunrise,sunset,uv_index_max` +
+      `&hourly=temperature_2m,precipitation_probability` +
+      `&timezone=auto`
     )
       .then(res => res.json())
       .then(data => {
-        // Save for offline use
-        localStorage.setItem(
-          "nimbus_last_weather",
-          JSON.stringify({ label, data, time: Date.now() })
-        );
-
-        const w = data.current_weather;
-        const zone = data.timezone;
-
-        const now = DateTime.fromISO(w.time, { zone });
-        const sunrise = DateTime.fromISO(data.daily.sunrise[0], { zone });
-        const sunset = DateTime.fromISO(data.daily.sunset[0], { zone });
-        const isNight = now < sunrise || now > sunset;
-
-        clearWeatherClasses();
-        document.body.classList.add(getWeatherClass(w.weathercode, isNight));
-
-        const uv = data.daily.uv_index_max[0];
-        const rainSoon = data.hourly.precipitation_probability[0] ?? 0;
-
-        const outside = outsideScore(
-          w.temperature,
-          rainSoon,
-          w.windspeed,
-          uv
-        );
-
-
-        output.innerHTML = `
-          <div class="line">📍 ${label}</div>
-          <div class="line">🌡️ ${w.temperature}°C</div>
-          <div class="line">💨 Wind: ${w.windspeed} km/h</div>
-          <div class="outside-score ${outside.class}">
-          <strong>${outside.text}</strong><br>
-          <small>${outside.reason}</small>
-          </div>
-          ${!isNight ? `<div class="line">${uvBadge(uv, w.temperature)}</div>` : ""}
-        `;
-
-        renderAlert(data.alerts);
-
-        /* ===== 5 DAY FORECAST ===== */
-        forecastDiv.innerHTML = "";
-        for (let i = 0; i < 5; i++) {
-          forecastDiv.innerHTML += `
-            <div class="day">
-              <strong>${DateTime.fromISO(data.daily.time[i]).toFormat("ccc")}</strong><br>
-              ${dailyWeatherLabel(data.daily.weathercode[i])}<br>
-              🌡️ ${data.daily.temperature_2m_max[i]}°C
-            </div>
-          `;
-        }
-
-        /* ===== HOURLY FORECAST ===== */
-        hourlyDiv.innerHTML = "";
-        const start = data.hourly.time.findIndex(t =>
-          DateTime.fromISO(t, { zone }) >= now
-        );
-
-        for (let i = start; i < start + 24; i++) {
-          hourlyDiv.innerHTML += `
-            <div class="day">
-              ${DateTime.fromISO(data.hourly.time[i], { zone }).toFormat("HH:mm")}<br>
-              🌡️ ${data.hourly.temperature_2m[i]}°C<br>
-              🌧️ ${data.hourly.precipitation_probability[i] ?? 0}%
-            </div>
-          `;
-        }
+        const saved = { label, data, time: Date.now() };
+        localStorage.setItem("nimbus_last_weather", JSON.stringify(saved));
+        renderWeather(saved, false);
       })
       .catch(() => {
         const cached = localStorage.getItem("nimbus_last_weather");
         if (cached) {
-          const saved = JSON.parse(cached);
-          output.innerHTML = `
-            <div class="line">📍 ${saved.label}</div>
-            <div class="line">Offline mode</div>
-            <div class="line">
-              Last updated: ${new Date(saved.time).toLocaleTimeString()}
-            </div>
-          `;
+          renderWeather(JSON.parse(cached), true);
         } else {
           output.textContent = "Offline and no saved data ☁️";
         }
@@ -360,16 +216,11 @@ function showUpdatePrompt(worker) {
   /* =========================
      SEARCH
   ========================= */
-
   searchBtn.addEventListener("click", () => {
     const city = cityInput.value.trim();
     if (!city) return;
 
-    fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-        city
-      )}&count=1`
-    )
+    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
       .then(res => res.json())
       .then(data => {
         if (!data.results?.length) throw new Error();
@@ -386,9 +237,8 @@ function showUpdatePrompt(worker) {
   });
 
   /* =========================
-     AUTO LOCATION
+     AUTO LOCATION ON LOAD
   ========================= */
-
   navigator.geolocation.getCurrentPosition(pos => {
     fetchWeather(pos.coords.latitude, pos.coords.longitude, "Your Location");
   });
