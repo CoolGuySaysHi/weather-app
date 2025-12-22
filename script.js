@@ -189,6 +189,71 @@ function showUpdatePrompt(worker) {
     output.insertAdjacentElement("afterend", banner);
   }
 
+  function outsideScore(temp, rainChance, wind, uv) {
+  let score = 100;
+  const reasons = [];
+
+  // Temperature
+  if (temp < 5) {
+    score -= 30;
+    reasons.push("very cold");
+  } else if (temp < 10) {
+    score -= 15;
+    reasons.push("chilly");
+  } else if (temp > 30) {
+    score -= 30;
+    reasons.push("very hot");
+  }
+
+  // Rain
+  if (rainChance > 70) {
+    score -= 40;
+    reasons.push("heavy rain likely");
+  } else if (rainChance > 40) {
+    score -= 20;
+    reasons.push("chance of rain");
+  }
+
+  // Wind
+  if (wind > 35) {
+    score -= 25;
+    reasons.push("very windy");
+  } else if (wind > 20) {
+    score -= 10;
+    reasons.push("windy");
+  }
+
+  // UV
+  if (uv >= 9) {
+    score -= 15;
+    reasons.push("very high UV");
+  }
+
+  score = Math.max(score, 0);
+
+  if (score >= 70) {
+    return {
+      text: "🟢 Great time to go outside",
+      reason: "Conditions are looking good",
+      class: "outside-good"
+    };
+  }
+
+  if (score >= 40) {
+    return {
+      text: "🟠 Okay, but be prepared",
+      reason: reasons.join(", "),
+      class: "outside-meh"
+    };
+  }
+
+  return {
+    text: "🔴 Probably stay inside",
+    reason: reasons.join(", "),
+    class: "outside-bad"
+  };
+}
+
   /* =========================
      FETCH WEATHER
   ========================= */
@@ -224,11 +289,24 @@ function showUpdatePrompt(worker) {
         document.body.classList.add(getWeatherClass(w.weathercode, isNight));
 
         const uv = data.daily.uv_index_max[0];
+        const rainSoon = data.hourly.precipitation_probability[0] ?? 0;
+
+        const outside = outsideScore(
+          w.temperature,
+          rainSoon,
+          w.windspeed,
+          uv
+        );
+
 
         output.innerHTML = `
           <div class="line">📍 ${label}</div>
           <div class="line">🌡️ ${w.temperature}°C</div>
           <div class="line">💨 Wind: ${w.windspeed} km/h</div>
+          <div class="outside-score ${outside.class}">
+          <strong>${outside.text}</strong><br>
+          <small>${outside.reason}</small>
+          </div>
           ${!isNight ? `<div class="line">${uvBadge(uv, w.temperature)}</div>` : ""}
         `;
 
