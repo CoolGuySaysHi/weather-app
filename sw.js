@@ -1,4 +1,4 @@
-const CACHE_NAME = "nimbus-v2";
+const CACHE_NAME = "nimbus-v3";
 
 const APP_ASSETS = [
   "/weather-app/",
@@ -10,14 +10,7 @@ const APP_ASSETS = [
   "/weather-app/icon-512.png"
 ];
 
-/* Allow update prompt */
-self.addEventListener("message", event => {
-  if (event.data === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
-});
-
-/* Install: cache app shell */
+/* Install */
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(APP_ASSETS))
@@ -25,37 +18,47 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 });
 
-/* Activate: clear old caches */
+/* Activate */
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
+        keys.map(key => key !== CACHE_NAME && caches.delete(key))
       )
     )
   );
   self.clients.claim();
 });
 
-/* Fetch: network → cache → fallback */
+/* Fetch — CACHE FIRST (ANDROID SAFE) */
 self.addEventListener("fetch", event => {
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, clone);
-        });
-        return response;
-      })
-      .catch(() =>
-        caches.match(event.request).then(res => {
-          return res || caches.match("/weather-app/index.html");
+    caches.match(event.request).then(cached => {
+      if (cached) {
+        // Update cache in background (don’t block UI)
+        fetch(event.request)
+          .then(response => {
+            if (response && response.status === 200) {
+              caches.open(CACHE_NAME).then(cache => {
+                cache.put(event.request, response.clone());
+              });
+            }
+          })
+          .catch(() => {});
+        return cached;
+      }
+
+      // If not cached, try network
+      return fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200) {
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, response.clone());
+            });
+          }
+          return response;
         })
-      )
+        .catch(() => caches.match("/weather-app/index.html"));
+    })
   );
 });
