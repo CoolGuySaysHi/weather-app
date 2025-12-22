@@ -1,29 +1,31 @@
+const CACHE_NAME = "nimbus-v2";
+
+const APP_ASSETS = [
+  "/weather-app/",
+  "/weather-app/index.html",
+  "/weather-app/style.css",
+  "/weather-app/script.js",
+  "/weather-app/manifest.json",
+  "/weather-app/icon-192.png",
+  "/weather-app/icon-512.png"
+];
+
+/* Allow update prompt */
 self.addEventListener("message", event => {
   if (event.data === "SKIP_WAITING") {
     self.skipWaiting();
   }
 });
 
-const CACHE_NAME = "nimbus-v1";
-const APP_ASSETS = [
-  "./",
-  "./index.html",
-  "./style.css",
-  "./script.js",
-  "./manifest.json"
-];
-
-/* Install: cache core files */
+/* Install: cache app shell */
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(APP_ASSETS);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_ASSETS))
   );
   self.skipWaiting();
 });
 
-/* Activate: clean old caches */
+/* Activate: clear old caches */
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -39,18 +41,21 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-/* Fetch: network first, fallback to cache */
+/* Fetch: network → cache → fallback */
 self.addEventListener("fetch", event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Cache fresh responses
-        const copy = response.clone();
+        const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, copy);
+          cache.put(event.request, clone);
         });
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() =>
+        caches.match(event.request).then(res => {
+          return res || caches.match("/weather-app/index.html");
+        })
+      )
   );
 });

@@ -79,7 +79,7 @@ function showUpdatePrompt(worker) {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("./sw.js")
+        .register("/weather-app/sw.js")
         .then(() => console.log("Nimbus PWA ready ☁️"))
         .catch(err => console.log("Service Worker failed", err));
     });
