@@ -1,0 +1,22 @@
+<svg width="512" height="512" viewBox="0 0 512 512"
+     xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Nimbus app icon">
+
+  <!-- background -->
+  <rect width="512" height="512" rx="96" fill="#4a90e2"/>
+
+  <!-- cloud -->
+  <g transform="translate(96,140)">
+    <ellipse cx="160" cy="180" rx="140" ry="32" fill="rgba(0,0,0,0.15)"/>
+
+    <path d="M100 180
+             C60 180 30 150 30 120
+             C30 85 60 55 100 55
+             C115 20 150 0 190 12
+             C230 0 265 20 280 55
+             C320 60 350 90 350 125
+             C350 160 320 190 285 190
+             L100 190 Z"
+          fill="#ffffff"/>
+  </g>
+</svg>
