@@ -51,18 +51,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return "cloudy";
   }
 
-  function dailyWeatherLabel(code) {
-    if (code === 0) return "☀️ Sunny";
-    if (code <= 3) return "☁️ Cloudy";
-    if (code <= 48) return "🌫️ Foggy";
-    if (code <= 67) return "🌧️ Rainy";
-    if (code <= 77) return "❄️ Snowy";
-    if (code <= 82) return "🌦️ Showers";
-    return "⛈️ Stormy";
-  }
-
   /* =========================
-     TIME ALIGNMENT (CRITICAL)
+     TIME ALIGNMENT
   ========================= */
   function findCurrentHourIndex(data) {
     const times = data.hourly?.time;
@@ -76,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
-     UV BADGE (COLOURED)
+     UV BADGE
   ========================= */
   function uvBadge(uv, temp) {
     let cls = "uv-low";
@@ -122,43 +112,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
-     RAIN SUMMARY PER DAY
-     (ignores overnight drizzle)
+     DAY RAIN SUMMARY (SMART)
   ========================= */
   function dayRainSummary(data, dayIndex) {
     const day = data.daily.time[dayIndex];
     let daytimeRain = 0;
     let nightRain = 0;
-    let maxProb = 0;
 
     for (let i = 0; i < data.hourly.time.length; i++) {
       if (!data.hourly.time[i].startsWith(day)) continue;
 
       const hour = parseInt(data.hourly.time[i].slice(11, 13), 10);
       const rain = data.hourly.precipitation[i] ?? 0;
-      const prob = data.hourly.precipitation_probability[i] ?? 0;
-
-      maxProb = Math.max(maxProb, prob);
 
       if (hour >= 7 && hour <= 21) daytimeRain += rain;
       else nightRain += rain;
     }
-
-    return { daytimeRain, nightRain, maxProb };
+    return { daytimeRain, nightRain };
   }
 
   function dayLabel(data, i) {
     const rain = dayRainSummary(data, i);
-
-    if (rain.daytimeRain < 0.5 && rain.nightRain > 0.5)
-      return "🌙 Overnight rain only";
-
-    if (rain.daytimeRain < 0.5)
-      return "☀️ Mostly dry";
-
-    if (rain.daytimeRain < 2)
-      return "🌦️ Light showers";
-
+    if (rain.daytimeRain < 0.5 && rain.nightRain > 0.5) return "🌙 Overnight rain only";
+    if (rain.daytimeRain < 0.5) return "☀️ Mostly dry";
+    if (rain.daytimeRain < 2) return "🌦️ Light showers";
     return "🌧️ Rain likely";
   }
 
@@ -183,10 +160,8 @@ document.addEventListener("DOMContentLoaded", () => {
       data.daily.uv_index_max[0]
     );
 
-    const isNight = data._meta?.isNight ?? false;
-
     clearWeatherClasses();
-    document.body.classList.add(getWeatherClass(w.weathercode, isNight));
+    document.body.classList.add(getWeatherClass(w.weathercode, false));
 
     output.innerHTML = `
       <div class="line">📍 ${saved.label}</div>
@@ -195,17 +170,14 @@ document.addEventListener("DOMContentLoaded", () => {
       ${isOffline ? `<div class="line">📴 Offline mode</div>` : ""}
       <div class="line">Last updated: ${new Date(saved.time).toLocaleTimeString("en-GB")}</div>
 
-      ${!isNight ? `
-        <div class="outside-score ${outside.class}">
-          <strong>${outside.text}</strong><br>
-          <small>${outside.reason}</small>
-        </div>
-      ` : ""}
+      <div class="outside-score ${outside.class}">
+        <strong>${outside.text}</strong><br>
+        <small>${outside.reason}</small>
+      </div>
 
-      ${!isNight ? uvBadge(data.daily.uv_index_max[0], w.temperature) : ""}
+      ${uvBadge(data.daily.uv_index_max[0], w.temperature)}
     `;
 
-    /* 5-day forecast */
     forecastDiv.innerHTML = "";
     for (let i = 0; i < 5; i++) {
       forecastDiv.innerHTML += `
@@ -217,7 +189,6 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }
 
-    /* Hourly forecast from NOW */
     hourlyDiv.innerHTML = "";
     for (let i = 0; i < 24; i++) {
       const idx = startIndex + i;
@@ -242,13 +213,12 @@ document.addEventListener("DOMContentLoaded", () => {
     fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current_weather=true` +
-      `&daily=weathercode,temperature_2m_max,sunrise,sunset,uv_index_max` +
-      `&hourly=temperature_2m,precipitation,precipitation_probability` +
+      `&daily=temperature_2m_max,uv_index_max,time` +
+      `&hourly=temperature_2m,precipitation,precipitation_probability,time` +
       `&timezone=auto`
     )
       .then(r => r.json())
       .then(data => {
-        data._meta = { isNight: false };
         const saved = { label, data, time: Date.now() };
         localStorage.setItem("nimbus_last_weather", JSON.stringify(saved));
         renderWeather(saved, false);
@@ -269,11 +239,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
       .then(r => r.json())
-      .then(d => fetchWeather(
-        d.results[0].latitude,
-        d.results[0].longitude,
-        `${d.results[0].name}, ${d.results[0].country}`
-      ))
+      .then(d => {
+        const r0 = d.results[0];
+        fetchWeather(r0.latitude, r0.longitude, `${r0.name}, ${r0.country}`);
+      })
       .catch(() => output.textContent = "City not found 😕");
   });
 
