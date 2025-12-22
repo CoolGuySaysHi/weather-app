@@ -62,14 +62,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
-     TIME ALIGNMENT (KEY FIX)
+     TIME ALIGNMENT (CRITICAL)
   ========================= */
   function findCurrentHourIndex(data) {
     const times = data.hourly?.time;
-    if (!times || !times.length) return 0;
+    if (!times) return 0;
 
     const now = new Date(data.current_weather.time).getTime();
-
     for (let i = 0; i < times.length; i++) {
       if (new Date(times[i]).getTime() >= now) return i;
     }
@@ -123,6 +122,47 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
+     RAIN SUMMARY PER DAY
+     (ignores overnight drizzle)
+  ========================= */
+  function dayRainSummary(data, dayIndex) {
+    const day = data.daily.time[dayIndex];
+    let daytimeRain = 0;
+    let nightRain = 0;
+    let maxProb = 0;
+
+    for (let i = 0; i < data.hourly.time.length; i++) {
+      if (!data.hourly.time[i].startsWith(day)) continue;
+
+      const hour = parseInt(data.hourly.time[i].slice(11, 13), 10);
+      const rain = data.hourly.precipitation[i] ?? 0;
+      const prob = data.hourly.precipitation_probability[i] ?? 0;
+
+      maxProb = Math.max(maxProb, prob);
+
+      if (hour >= 7 && hour <= 21) daytimeRain += rain;
+      else nightRain += rain;
+    }
+
+    return { daytimeRain, nightRain, maxProb };
+  }
+
+  function dayLabel(data, i) {
+    const rain = dayRainSummary(data, i);
+
+    if (rain.daytimeRain < 0.5 && rain.nightRain > 0.5)
+      return "🌙 Overnight rain only";
+
+    if (rain.daytimeRain < 0.5)
+      return "☀️ Mostly dry";
+
+    if (rain.daytimeRain < 2)
+      return "🌦️ Light showers";
+
+    return "🌧️ Rain likely";
+  }
+
+  /* =========================
      RENDER WEATHER
   ========================= */
   function renderWeather(saved, isOffline) {
@@ -171,7 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
       forecastDiv.innerHTML += `
         <div class="day">
           <strong>${new Date(data.daily.time[i]).toLocaleDateString("en-GB", { weekday: "short" })}</strong><br>
-          ${dailyWeatherLabel(data.daily.weathercode[i])}<br>
+          ${dayLabel(data, i)}<br>
           🌡️ ${data.daily.temperature_2m_max[i]}°C
         </div>
       `;
@@ -203,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current_weather=true` +
       `&daily=weathercode,temperature_2m_max,sunrise,sunset,uv_index_max` +
-      `&hourly=temperature_2m,precipitation_probability` +
+      `&hourly=temperature_2m,precipitation,precipitation_probability` +
       `&timezone=auto`
     )
       .then(r => r.json())
@@ -229,7 +269,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
       .then(r => r.json())
-      .then(d => fetchWeather(d.results[0].latitude, d.results[0].longitude, `${d.results[0].name}, ${d.results[0].country}`))
+      .then(d => fetchWeather(
+        d.results[0].latitude,
+        d.results[0].longitude,
+        `${d.results[0].name}, ${d.results[0].country}`
+      ))
       .catch(() => output.textContent = "City not found 😕");
   });
 
