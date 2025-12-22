@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Weather App</title>
+  <title>Nimbus</title>
+
+  <!--App Manifest-->
+
+  <link rel="manifest" href="manifest.json">
 
   <!-- Main stylesheet -->
   <link rel="stylesheet" href="style.css" />
@@ -23,7 +27,49 @@
   <!-- 🌤️ APP UI -->
   <div class="app">
 
-    <h1>Weather App</h1>
+    <div class="logo">
+  <!-- Nimbus logo SVG -->
+  <svg width="250" height="80" viewBox="0 0 250 80"
+       xmlns="http://www.w3.org/2000/svg"
+       role="img"
+       aria-label="Nimbus logo">
+    <title>Nimbus</title>
+
+    <g transform="translate(0,6)">
+      <ellipse cx="46" cy="46" rx="34" ry="8" fill="rgba(0,0,0,0.12)"/>
+      <path d="M30 44
+               C20 44 12 37 12 28
+               C12 19 19 12 28 12
+               C32 4 41 0 50 3
+               C58 0 67 4 70 12
+               C80 13 88 21 88 31
+               C88 40 81 47 72 47
+               L30 47 Z"
+            fill="#ffffff"
+            stroke="rgba(0,0,0,0.18)"
+            stroke-width="2"
+            stroke-linejoin="round"/>
+      <path d="M25 26 C27 18 34 14 42 15"
+            fill="none"
+            stroke="rgba(255,255,255,0.9)"
+            stroke-width="3"
+            stroke-linecap="round"/>
+      <circle cx="40" cy="34" r="2.4" fill="rgba(0,0,0,0.55)"/>
+      <circle cx="58" cy="34" r="2.4" fill="rgba(0,0,0,0.55)"/>
+      <path d="M44 40 C48 43 52 43 56 40"
+            fill="none"
+            stroke="rgba(0,0,0,0.45)"
+            stroke-width="2.5"
+            stroke-linecap="round"/>
+    </g>
+
+    <text x="105" y="50"
+          font-family="Arial, sans-serif"
+          font-size="34"
+          font-weight="700"
+          fill="currentColor">Nimbus</text>
+  </svg>
+</div>
 
     <!-- City search -->
     <input

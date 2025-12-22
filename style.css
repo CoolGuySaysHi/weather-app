@@ -270,19 +270,6 @@ body.clear-night .weather-layer {
 .uv-very-high { background: #e74c3c; color: #fff; }
 .uv-extreme { background: #8e44ad; color: #fff; }
 
-/* =========================
-   DARK MODE
-========================= */
-
-body[data-theme="dark"] {
-  background: #121212;
-  color: #e0e0e0;
-}
-
-body[data-theme="dark"] .day {
-  background: #1e1e1e;
-  color: #e0e0e0;
-}
 
 /* =========================
    SCROLLBAR
@@ -295,4 +282,49 @@ body[data-theme="dark"] .day {
 #hourlyForecast::-webkit-scrollbar-thumb {
   background: rgba(0,0,0,0.4);
   border-radius: 4px;
+}
+/*==========================
+    ALERT STYLES
+========================== */
+
+
+.alert {
+  margin: 12px auto;
+  padding: 12px;
+  border-radius: 8px;
+  max-width: 360px;
+  font-weight: bold;
+}
+
+.alert-yellow { background: #fff3cd; color: #664d03; }
+.alert-amber  { background: #ffe0b2; color: #7a3e00; }
+.alert-red    { background: #f8d7da; color: #842029; }
+
+/* Nimbus logo layout */
+.logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+/* ===== Manual dark mode override (wins over everything) ===== */
+body.dark {
+  background: #121212 !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark .day {
+  background: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark input,
+body.dark button {
+  background: #2a2a2a !important;
+  color: #e0e0e0 !important;
+}
+
+/* keep hourly forecast readable */
+body.dark #hourlyForecast .day,
+body.dark #hourlyForecast .day * {
+  color: #e0e0e0 !important;
 }
