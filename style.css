@@ -354,6 +354,20 @@ body[data-theme="dark"] .outside-score.bad {
   color: #ef9a9a;
 }
 
+/* 🗺️ Map */
+.map {
+  width: 100%;
+  max-width: 600px;
+  height: 300px;
+  margin: 20px auto;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.hidden {
+  display: none;
+}
+
 
 
 /* 🌙 FORCE DARK MODE OVERRIDES */

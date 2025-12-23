@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nimbus</title>
 
+  <link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  defer
+></script>
+
   <!--App Manifest-->
 
   <link rel="manifest" href="manifest.json">
@@ -86,8 +96,8 @@
 
     <div>
       <button id="toggleDark">🌙 Dark Mode</button>
-    </div>
-
+      <button id="randomBtn" title="Random place">🎲</button>
+    <div>
     <!-- Weather summary -->
     <div id="output" class="weather-output">
       Waiting for weather magic…
@@ -102,6 +112,9 @@
     <div id="hourlyForecast"></div>
   </div>
 <link rel="apple-touch-icon" href="icon-192.png">
+
+<div id="map" class="map hidden"></div>
+
 
 </body>
 </html>

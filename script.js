@@ -1,4 +1,25 @@
 document.addEventListener("DOMContentLoaded", () => {
+  
+  const LAND_REGIONS = [
+  // Europe
+  { latMin: 36, latMax: 71, lonMin: -10, lonMax: 40 },
+
+  // North America
+  { latMin: 15, latMax: 72, lonMin: -170, lonMax: -50 },
+
+  // South America
+  { latMin: -55, latMax: 12, lonMin: -82, lonMax: -35 },
+
+  // Africa
+  { latMin: -35, latMax: 37, lonMin: -18, lonMax: 52 },
+
+  // Asia
+  { latMin: 5, latMax: 77, lonMin: 26, lonMax: 180 },
+
+  // Australia
+  { latMin: -44, latMax: -10, lonMin: 112, lonMax: 154 }
+];
+
   /* =========================
      ELEMENTS
   ========================= */
@@ -13,6 +34,18 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastRequest = null;
   let autoLocationTried = false;
   const darkToggleBtn = document.getElementById("toggleDark");
+
+  const randomBtn = document.getElementById("randomBtn");
+
+randomBtn?.addEventListener("click", () => {
+  const { lat, lon } = getRandomLandCoordinates();
+
+  fetchWeather(lat, lon, "🎲 Random location");
+  showMap(lat, lon, "🎲 Random location");
+});
+
+let map = null;
+let mapMarker = null;
 
   /* =========================
      BACKGROUND CLASSES
@@ -70,6 +103,51 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     return 0;
   }
+  function showMap(lat, lon, label) {
+  const mapDiv = document.getElementById("map");
+  mapDiv.classList.remove("hidden");
+
+  if (!map) {
+    map = L.map("map").setView([lat, lon], 4);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
+  } else {
+    map.setView([lat, lon], 4);
+  }
+
+  if (mapMarker) {
+    mapMarker.setLatLng([lat, lon]);
+  } else {
+    mapMarker = L.marker([lat, lon]).addTo(map);
+  }
+
+  mapMarker.bindPopup(label).openPopup();
+}
+
+function getRandomLandCoordinates() {
+  const region = LAND_REGIONS[
+    Math.floor(Math.random() * LAND_REGIONS.length)
+  ];
+
+  const lat =
+    Math.random() * (region.latMax - region.latMin) + region.latMin;
+
+  const lon =
+    Math.random() * (region.lonMax - region.lonMin) + region.lonMin;
+
+  return {
+    lat: lat.toFixed(4),
+    lon: lon.toFixed(4)
+  };
+}
+function hideMap() {
+  const mapDiv = document.getElementById("map");
+  if (mapDiv) {
+    mapDiv.classList.add("hidden");
+  }
+}
 
   /* =========================
      API URL (SAFE)
@@ -292,6 +370,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const city = cityInput.value.trim();
     if (!city) return;
 
+    hideMap();
+    
     fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
       .then(r => r.json())
       .then(d => {
@@ -306,6 +386,7 @@ document.addEventListener("DOMContentLoaded", () => {
      LOCATION
   ========================= */
   locationBtn.addEventListener("click", () => {
+    hideMap();
     navigator.geolocation.getCurrentPosition(
       pos => fetchWeather(pos.coords.latitude, pos.coords.longitude, "Your Location"),
       () => output.textContent = "Location denied ❌"
