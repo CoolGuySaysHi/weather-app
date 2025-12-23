@@ -348,3 +348,50 @@ body.dark #hourlyForecast .day,
 body.dark #hourlyForecast .day * {
   color: #e0e0e0 !important;
 }
+
+/* 🌿 Outside score base */
+.outside-score {
+  margin: 10px auto;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: bold;
+  width: fit-content;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* 🟢 Great */
+.outside-score.good {
+  background: rgba(76, 175, 80, 0.2);
+  color: #2e7d32;
+}
+
+/* 🟡 Okay */
+.outside-score.okay {
+  background: rgba(255, 193, 7, 0.25);
+  color: #8a6d00;
+}
+
+/* 🔴 Poor */
+.outside-score.bad {
+  background: rgba(244, 67, 54, 0.25);
+  color: #b71c1c;
+}
+
+/* Dark mode tweaks (optional but nice) */
+body.clear-night .outside-score.good,
+body[data-theme="dark"] .outside-score.good {
+  background: rgba(76, 175, 80, 0.3);
+  color: #a5d6a7;
+}
+
+body.clear-night .outside-score.okay,
+body[data-theme="dark"] .outside-score.okay {
+  background: rgba(255, 193, 7, 0.3);
+  color: #ffe082;
+}
+
+body.clear-night .outside-score.bad,
+body[data-theme="dark"] .outside-score.bad {
+  background: rgba(244, 67, 54, 0.3);
+  color: #ef9a9a;
+}

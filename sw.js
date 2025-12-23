@@ -1,4 +1,4 @@
-const CACHE_NAME = "nimbus-v4";
+const CACHE_NAME = "nimbus-v2";
 
 const APP_ASSETS = [
   "/weather-app/",
@@ -6,60 +6,73 @@ const APP_ASSETS = [
   "/weather-app/style.css",
   "/weather-app/script.js",
   "/weather-app/manifest.json",
-  "/weather-app/icon-192.png",
-  "/weather-app/icon-512.png"
+  "/weather-app/icons/icon-192.png",
+  "/weather-app/icons/icon-512.png"
 ];
 
-self.addEventListener("message", event => {
-  if (event.data === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
-});
-
+/* =========================
+   INSTALL
+========================= */
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_ASSETS))
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(APP_ASSETS);
+    })
   );
-  // ❌ no skipWaiting here — enables update prompt
+  self.skipWaiting();
 });
 
+/* =========================
+   ACTIVATE
+========================= */
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => key !== CACHE_NAME && caches.delete(key))
-      )
-    )
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys
+          .filter(k => k !== CACHE_NAME)
+          .map(k => caches.delete(k))
+      );
+    })
   );
   self.clients.claim();
 });
 
+/* =========================
+   FETCH
+========================= */
 self.addEventListener("fetch", event => {
+  const url = new URL(event.request.url);
+
+  /* 🚫 NEVER touch third-party APIs (Open-Meteo, geocoding, etc.) */
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  /* 📦 Cache-first for app assets */
   event.respondWith(
     caches.match(event.request).then(cached => {
-      if (cached) {
-        fetch(event.request)
-          .then(res => {
-            if (res && res.status === 200) {
-              caches.open(CACHE_NAME).then(cache =>
-                cache.put(event.request, res.clone())
-              );
-            }
-          })
-          .catch(() => {});
-        return cached;
-      }
-
-      return fetch(event.request)
-        .then(res => {
-          if (res && res.status === 200) {
-            caches.open(CACHE_NAME).then(cache =>
-              cache.put(event.request, res.clone())
-            );
+      return (
+        cached ||
+        fetch(event.request).then(response => {
+          // Only cache valid GET responses
+          if (
+            event.request.method === "GET" &&
+            response.status === 200
+          ) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, clone);
+            });
           }
-          return res;
+          return response;
         })
-        .catch(() => caches.match("/weather-app/index.html"));
+      );
+    }).catch(() => {
+      // Offline fallback (optional)
+      if (event.request.mode === "navigate") {
+        return caches.match("/weather-app/index.html");
+      }
     })
   );
 });
