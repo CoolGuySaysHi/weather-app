@@ -1,78 +1,89 @@
-const CACHE_NAME = "nimbus-v2";
+/* =========================
+   Nimbus Service Worker
+   Auto-updating & safe
+========================= */
 
-const APP_ASSETS = [
-  "/weather-app/",
-  "/weather-app/index.html",
-  "/weather-app/style.css",
-  "/weather-app/script.js",
-  "/weather-app/manifest.json",
-  "/weather-app/icons/icon-192.png",
-  "/weather-app/icons/icon-512.png"
+const CACHE_VERSION = "nimbus-v5";
+const STATIC_CACHE = `${CACHE_VERSION}-static`;
+const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+
+/* =========================
+   Files to precache
+========================= */
+const PRECACHE_ASSETS = [
+  "./",
+  "./index.html",
+  "./style.css",
+  "./script.js",
+  "./manifest.json"
 ];
 
 /* =========================
    INSTALL
+   - Cache core files
+   - Skip waiting so updates apply immediately
 ========================= */
 self.addEventListener("install", event => {
+  self.skipWaiting();
+
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(APP_ASSETS);
+    caches.open(STATIC_CACHE).then(cache => {
+      return cache.addAll(PRECACHE_ASSETS);
     })
   );
-  self.skipWaiting();
 });
 
 /* =========================
    ACTIVATE
+   - Remove old caches
+   - Take control immediately
 ========================= */
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
-        keys
-          .filter(k => k !== CACHE_NAME)
-          .map(k => caches.delete(k))
+        keys.map(key => {
+          if (!key.startsWith(CACHE_VERSION)) {
+            return caches.delete(key);
+          }
+        })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 /* =========================
    FETCH
+   Strategy:
+   - Network-first for API
+   - Cache-first for static files
 ========================= */
 self.addEventListener("fetch", event => {
-  const url = new URL(event.request.url);
+  const req = event.request;
+  const url = new URL(req.url);
 
-  /* 🚫 NEVER touch third-party APIs (Open-Meteo, geocoding, etc.) */
-  if (url.origin !== self.location.origin) {
+  /* 🌍 Open-Meteo API: always network-first */
+  if (url.origin.includes("open-meteo.com")) {
+    event.respondWith(
+      fetch(req)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(RUNTIME_CACHE).then(cache => cache.put(req, clone));
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
     return;
   }
 
-  /* 📦 Cache-first for app assets */
+  /* 🧠 Everything else: cache-first */
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      return (
-        cached ||
-        fetch(event.request).then(response => {
-          // Only cache valid GET responses
-          if (
-            event.request.method === "GET" &&
-            response.status === 200
-          ) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, clone);
-            });
-          }
-          return response;
-        })
-      );
-    }).catch(() => {
-      // Offline fallback (optional)
-      if (event.request.mode === "navigate") {
-        return caches.match("/weather-app/index.html");
-      }
+    caches.match(req).then(cached => {
+      return cached || fetch(req).then(res => {
+        const clone = res.clone();
+        caches.open(RUNTIME_CACHE).then(cache => cache.put(req, clone));
+        return res;
+      });
     })
   );
 });
