@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let lastRequest = null;
   let autoLocationTried = false;
+  const darkToggleBtn = document.getElementById("toggleDark");
 
   /* =========================
      BACKGROUND CLASSES
@@ -85,6 +86,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     return `https://api.open-meteo.com/v1/forecast?${params}`;
   }
+
+  // 🌙 Dark mode toggle
+  if (localStorage.getItem("nimbus_dark") === "1") {
+    document.body.classList.add("dark");
+  }
+
+  darkToggleBtn?.addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+
+    localStorage.setItem(
+      "nimbus_dark",
+      document.body.classList.contains("dark") ? "1" : "0"
+    );
+  });
 
   /* =========================
      UV INDEX

@@ -306,48 +306,6 @@ body.clear-night .weather-layer {
   justify-content: center;
   margin-bottom: 10px;
 }
-/* Outside score styles */
-.outside-score {
-  margin-top: 10px;
-  padding: 8px;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.outside-good {
-  background: rgba(76, 175, 80, 0.15);
-}
-
-.outside-meh {
-  background: rgba(255, 193, 7, 0.15);
-}
-
-.outside-bad {
-  background: rgba(244, 67, 54, 0.15);
-}
-
-/* ===== Manual dark mode override (wins over everything) ===== */
-body.dark {
-  background: #121212 !important;
-  color: #e0e0e0 !important;
-}
-
-body.dark .day {
-  background: #1e1e1e !important;
-  color: #e0e0e0 !important;
-}
-
-body.dark input,
-body.dark button {
-  background: #2a2a2a !important;
-  color: #e0e0e0 !important;
-}
-
-/* keep hourly forecast readable */
-body.dark #hourlyForecast .day,
-body.dark #hourlyForecast .day * {
-  color: #e0e0e0 !important;
-}
 
 /* 🌿 Outside score base */
 .outside-score {
@@ -394,4 +352,32 @@ body.clear-night .outside-score.bad,
 body[data-theme="dark"] .outside-score.bad {
   background: rgba(244, 67, 54, 0.3);
   color: #ef9a9a;
+}
+
+
+
+/* 🌙 FORCE DARK MODE OVERRIDES */
+body.dark,
+body.dark.sunny,
+body.dark.cloudy,
+body.dark.rainy,
+body.dark.snowy,
+body.dark.clear-night {
+  background: #121212 !important;
+  color: #e0e0e0;
+  animation: none !important;
+}
+
+/* Cards in dark mode */
+body.dark .day {
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+/* Inputs & buttons */
+body.dark input,
+body.dark button {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  border: none;
 }
