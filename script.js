@@ -2,23 +2,10 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      ELEMENTS
   ========================= */
-  const urlParams = new URLSearchParams(location.search);
-  const sharedLat = urlParams.get("lat");
-  const sharedLon = urlParams.get("lon");
-  const sharedLabel = urlParams.get("label");
-  const isSharedLink = sharedLat !== null && sharedLon !== null;
-
-
-  if (isSharedLink) {
-    fetchWeather(sharedLat, sharedLon, sharedLabel || "Shared location");
-  }
-
-
   const cityInput = document.getElementById("cityInput");
   const searchBtn = document.getElementById("searchBtn");
   const locationBtn = document.getElementById("getWeather");
   const randomBtn = document.getElementById("randomBtn");
-  const shareBtn = document.getElementById("shareBtn");
   const darkToggleBtn = document.getElementById("toggleDark");
 
   const output = document.getElementById("output");
@@ -27,9 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const mapDiv = document.getElementById("map");
 
   let lastRequest = null;
-  let lastCoords = null;
   let autoLocationTried = false;
-  let sharedLinkUsed = false;
 
   /* =========================
      DARK MODE
@@ -66,10 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.classList.add(night ? "clear-night" : "sunny");
     } else if (code <= 48) {
       document.body.classList.add("cloudy");
-    } else if (
-      (code >= 71 && code <= 77) ||
-      (code >= 85 && code <= 86)
-    ) {
+    } else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
       document.body.classList.add("snowy");
     } else if (
       (code >= 51 && code <= 67) ||
@@ -268,7 +250,6 @@ document.addEventListener("DOMContentLoaded", () => {
   ========================= */
   function fetchWeather(lat, lon, label) {
     lastRequest = { lat, lon, label };
-    lastCoords = { lat, lon, label };
     output.textContent = "Nimbus is checking the sky… ☁️";
 
     fetch(buildForecastUrl(lat, lon))
@@ -301,45 +282,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
-     SHARE
-  ========================= */
-  shareBtn?.addEventListener("click", () => {
-  if (!lastCoords) {
-    alert("Load a location first 🌍");
-    return;
-  }
-
-  const params = new URLSearchParams({
-    lat: lastCoords.lat,
-    lon: lastCoords.lon,
-    label: lastCoords.label
-  });
-
-  const shareUrl = `${location.origin}${location.pathname}?${params}`;
-
-  // 📱 Mobile share (must be direct)
-  if (navigator.share) {
-    navigator.share({
-      title: "Nimbus weather",
-      text: `Weather for ${lastCoords.label}`,
-      url: shareUrl
-    }).catch(() => {
-      // fallback if user cancels
-    });
-    return;
-  }
-
-  // 💻 Desktop / fallback
-  try {
-    navigator.clipboard.writeText(shareUrl);
-    alert("🔗 Link copied to clipboard!");
-  } catch {
-    prompt("Copy this link:", shareUrl);
-  }
-});
-
-
-  /* =========================
      SEARCH
   ========================= */
   searchBtn.addEventListener("click", () => {
@@ -359,30 +301,23 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================
-     LOCATION
+     LOCATION (USER ONLY)
   ========================= */
- locationBtn.addEventListener("click", (e) => {
-  // 🚫 Ignore phantom / restored clicks on shared links
-  if (isSharedLink && !e.isTrusted) return;
+  locationBtn.addEventListener("click", () => {
+    hideMap();
 
-  hideMap();
-
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      fetchWeather(
+    navigator.geolocation.getCurrentPosition(
+      pos => fetchWeather(
         pos.coords.latitude,
         pos.coords.longitude,
         "Your Location"
-      );
-    },
-    () => {
-      output.textContent = "Location denied ❌";
-    }
-  );
-});
+      ),
+      () => output.textContent = "Location denied ❌"
+    );
+  });
 
   /* =========================
-     RANDOM (LAND ONLY)
+     RANDOM LAND LOCATION
   ========================= */
   const LAND_REGIONS = [
     { latMin: 36, latMax: 71, lonMin: -10, lonMax: 40 },
@@ -439,16 +374,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
-     SHARED LINK LOAD
+     AUTO LOCATION (RESTORED)
   ========================= */
-  const params = new URLSearchParams(location.search);
-  const lat = params.get("lat");
-  const lon = params.get("lon");
-  const label = params.get("label");
+  setTimeout(() => {
+    if (autoLocationTried) return;
+    autoLocationTried = true;
 
-  if (lat && lon) {
-    sharedLinkUsed = true;
-    fetchWeather(lat, lon, label || "Shared location");
-  }
-
+    navigator.geolocation?.getCurrentPosition(
+      pos => fetchWeather(
+        pos.coords.latitude,
+        pos.coords.longitude,
+        "Your Location"
+      ),
+      () => {}
+    );
+  }, 800);
 });
