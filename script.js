@@ -361,14 +361,25 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      LOCATION
   ========================= */
-  locationBtn.addEventListener("click", () => {
-    hideMap();
+ locationBtn.addEventListener("click", (e) => {
+  // 🚫 Ignore phantom / restored clicks on shared links
+  if (isSharedLink && !e.isTrusted) return;
 
-    navigator.geolocation.getCurrentPosition(
-      pos => fetchWeather(pos.coords.latitude, pos.coords.longitude, "Your Location"),
-      () => output.textContent = "Location denied ❌"
-    );
-  });
+  hideMap();
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      fetchWeather(
+        pos.coords.latitude,
+        pos.coords.longitude,
+        "Your Location"
+      );
+    },
+    () => {
+      output.textContent = "Location denied ❌";
+    }
+  );
+});
 
   /* =========================
      RANDOM (LAND ONLY)
