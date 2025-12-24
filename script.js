@@ -440,17 +440,4 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchWeather(lat, lon, label || "Shared location");
   }
 
-  /* =========================
-     AUTO LOCATION
-  ========================= */
- if (!isSharedLink) {
-  navigator.geolocation?.getCurrentPosition(
-    pos => fetchWeather(
-      pos.coords.latitude,
-      pos.coords.longitude,
-      "Your Location"
-    ),
-    () => {}
-  );
-}
 });
