@@ -44,8 +44,38 @@ randomBtn?.addEventListener("click", () => {
   showMap(lat, lon, "🎲 Random location");
 });
 
+const shareBtn = document.getElementById("shareBtn");
+let lastCoords = null;
 let map = null;
 let mapMarker = null;
+
+shareBtn?.addEventListener("click", async () => {
+  if (!lastCoords) return;
+
+  const params = new URLSearchParams({
+    lat: lastCoords.lat,
+    lon: lastCoords.lon,
+    label: lastCoords.label
+  });
+
+  const shareUrl = `${location.origin}${location.pathname}?${params}`;
+
+  // Mobile / modern browsers
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "Nimbus weather",
+        text: `Check out the weather for ${lastCoords.label}`,
+        url: shareUrl
+      });
+      return;
+    } catch {}
+  }
+
+  // Fallback: copy to clipboard
+  await navigator.clipboard.writeText(shareUrl);
+  alert("🔗 Link copied to clipboard!");
+});
 
   /* =========================
      BACKGROUND CLASSES
@@ -330,7 +360,9 @@ function hideMap() {
   /* =========================
      FETCH WEATHER
   ========================= */
+
   function fetchWeather(lat, lon, label) {
+    lastCoords = { lat, lon, label };
     lastRequest = { lat, lon, label };
     output.textContent = "Nimbus is checking the sky… ☁️";
 
@@ -392,6 +424,16 @@ function hideMap() {
       () => output.textContent = "Location denied ❌"
     );
   });
+
+  const params = new URLSearchParams(location.search);
+const lat = params.get("lat");
+const lon = params.get("lon");
+const label = params.get("label");
+
+if (lat && lon) {
+  fetchWeather(lat, lon, label || "Shared location");
+  return; // ⛔ stop auto-location
+}
 
   /* =========================
      AUTO LOCATION
