@@ -1,85 +1,41 @@
 document.addEventListener("DOMContentLoaded", () => {
-  
-  const LAND_REGIONS = [
-  // Europe
-  { latMin: 36, latMax: 71, lonMin: -10, lonMax: 40 },
-
-  // North America
-  { latMin: 15, latMax: 72, lonMin: -170, lonMax: -50 },
-
-  // South America
-  { latMin: -55, latMax: 12, lonMin: -82, lonMax: -35 },
-
-  // Africa
-  { latMin: -35, latMax: 37, lonMin: -18, lonMax: 52 },
-
-  // Asia
-  { latMin: 5, latMax: 77, lonMin: 26, lonMax: 180 },
-
-  // Australia
-  { latMin: -44, latMax: -10, lonMin: 112, lonMax: 154 }
-];
-
   /* =========================
      ELEMENTS
   ========================= */
   const cityInput = document.getElementById("cityInput");
   const searchBtn = document.getElementById("searchBtn");
   const locationBtn = document.getElementById("getWeather");
+  const randomBtn = document.getElementById("randomBtn");
+  const shareBtn = document.getElementById("shareBtn");
+  const darkToggleBtn = document.getElementById("toggleDark");
 
   const output = document.getElementById("output");
   const forecastDiv = document.getElementById("forecast");
   const hourlyDiv = document.getElementById("hourlyForecast");
+  const mapDiv = document.getElementById("map");
 
   let lastRequest = null;
+  let lastCoords = null;
   let autoLocationTried = false;
-  const darkToggleBtn = document.getElementById("toggleDark");
-
-  const randomBtn = document.getElementById("randomBtn");
-
-randomBtn?.addEventListener("click", () => {
-  const { lat, lon } = getRandomLandCoordinates();
-
-  fetchWeather(lat, lon, "🎲 Random location");
-  showMap(lat, lon, "🎲 Random location");
-});
-
-const shareBtn = document.getElementById("shareBtn");
-let lastCoords = null;
-let map = null;
-let mapMarker = null;
-
-shareBtn?.addEventListener("click", async () => {
-  if (!lastCoords) return;
-
-  const params = new URLSearchParams({
-    lat: lastCoords.lat,
-    lon: lastCoords.lon,
-    label: lastCoords.label
-  });
-
-  const shareUrl = `${location.origin}${location.pathname}?${params}`;
-
-  // Mobile / modern browsers
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: "Nimbus weather",
-        text: `Check out the weather for ${lastCoords.label}`,
-        url: shareUrl
-      });
-      return;
-    } catch {}
-  }
-
-  // Fallback: copy to clipboard
-  await navigator.clipboard.writeText(shareUrl);
-  alert("🔗 Link copied to clipboard!");
-});
+  let sharedLinkUsed = false;
 
   /* =========================
-     BACKGROUND CLASSES
-     (animations live in CSS)
+     DARK MODE
+  ========================= */
+  if (localStorage.getItem("nimbus_dark") === "1") {
+    document.body.classList.add("dark");
+  }
+
+  darkToggleBtn?.addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+    localStorage.setItem(
+      "nimbus_dark",
+      document.body.classList.contains("dark") ? "1" : "0"
+    );
+  });
+
+  /* =========================
+     WEATHER BACKGROUNDS
   ========================= */
   function clearWeatherClasses() {
     document.body.classList.remove(
@@ -133,54 +89,9 @@ shareBtn?.addEventListener("click", async () => {
     }
     return 0;
   }
-  function showMap(lat, lon, label) {
-  const mapDiv = document.getElementById("map");
-  mapDiv.classList.remove("hidden");
-
-  if (!map) {
-    map = L.map("map").setView([lat, lon], 4);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap"
-    }).addTo(map);
-  } else {
-    map.setView([lat, lon], 4);
-  }
-
-  if (mapMarker) {
-    mapMarker.setLatLng([lat, lon]);
-  } else {
-    mapMarker = L.marker([lat, lon]).addTo(map);
-  }
-
-  mapMarker.bindPopup(label).openPopup();
-}
-
-function getRandomLandCoordinates() {
-  const region = LAND_REGIONS[
-    Math.floor(Math.random() * LAND_REGIONS.length)
-  ];
-
-  const lat =
-    Math.random() * (region.latMax - region.latMin) + region.latMin;
-
-  const lon =
-    Math.random() * (region.lonMax - region.lonMin) + region.lonMin;
-
-  return {
-    lat: lat.toFixed(4),
-    lon: lon.toFixed(4)
-  };
-}
-function hideMap() {
-  const mapDiv = document.getElementById("map");
-  if (mapDiv) {
-    mapDiv.classList.add("hidden");
-  }
-}
 
   /* =========================
-     API URL (SAFE)
+     API
   ========================= */
   function buildForecastUrl(lat, lon) {
     const params = new URLSearchParams({
@@ -194,20 +105,6 @@ function hideMap() {
     });
     return `https://api.open-meteo.com/v1/forecast?${params}`;
   }
-
-  // 🌙 Dark mode toggle
-  if (localStorage.getItem("nimbus_dark") === "1") {
-    document.body.classList.add("dark");
-  }
-
-  darkToggleBtn?.addEventListener("click", () => {
-    document.body.classList.toggle("dark");
-
-    localStorage.setItem(
-      "nimbus_dark",
-      document.body.classList.contains("dark") ? "1" : "0"
-    );
-  });
 
   /* =========================
      UV INDEX
@@ -339,10 +236,7 @@ function hideMap() {
         label = "Overnight rain only"; emoji = "🌙🌧️";
       } else if (code === 0) {
         label = "Sunny"; emoji = "☀️";
-      } else if (
-        (code >= 71 && code <= 77) ||
-        (code >= 85 && code <= 86)
-      ) {
+      } else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) {
         label = "Snowy"; emoji = "❄️";
       }
 
@@ -360,10 +254,9 @@ function hideMap() {
   /* =========================
      FETCH WEATHER
   ========================= */
-
   function fetchWeather(lat, lon, label) {
-    lastCoords = { lat, lon, label };
     lastRequest = { lat, lon, label };
+    lastCoords = { lat, lon, label };
     output.textContent = "Nimbus is checking the sky… ☁️";
 
     fetch(buildForecastUrl(lat, lon))
@@ -396,6 +289,30 @@ function hideMap() {
   }
 
   /* =========================
+     SHARE
+  ========================= */
+  shareBtn?.addEventListener("click", async () => {
+    if (!lastCoords) return;
+
+    const params = new URLSearchParams(lastCoords);
+    const url = `${location.origin}${location.pathname}?${params}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Nimbus weather",
+          text: `Weather for ${lastCoords.label}`,
+          url
+        });
+        return;
+      } catch {}
+    }
+
+    await navigator.clipboard.writeText(url);
+    alert("🔗 Link copied to clipboard!");
+  });
+
+  /* =========================
      SEARCH
   ========================= */
   searchBtn.addEventListener("click", () => {
@@ -403,7 +320,7 @@ function hideMap() {
     if (!city) return;
 
     hideMap();
-    
+
     fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
       .then(r => r.json())
       .then(d => {
@@ -419,27 +336,88 @@ function hideMap() {
   ========================= */
   locationBtn.addEventListener("click", () => {
     hideMap();
+
     navigator.geolocation.getCurrentPosition(
       pos => fetchWeather(pos.coords.latitude, pos.coords.longitude, "Your Location"),
       () => output.textContent = "Location denied ❌"
     );
   });
 
-  const params = new URLSearchParams(location.search);
-const lat = params.get("lat");
-const lon = params.get("lon");
-const label = params.get("label");
+  /* =========================
+     RANDOM (LAND ONLY)
+  ========================= */
+  const LAND_REGIONS = [
+    { latMin: 36, latMax: 71, lonMin: -10, lonMax: 40 },
+    { latMin: 15, latMax: 72, lonMin: -170, lonMax: -50 },
+    { latMin: -55, latMax: 12, lonMin: -82, lonMax: -35 },
+    { latMin: -35, latMax: 37, lonMin: -18, lonMax: 52 },
+    { latMin: 5, latMax: 77, lonMin: 26, lonMax: 180 },
+    { latMin: -44, latMax: -10, lonMin: 112, lonMax: 154 }
+  ];
 
-if (lat && lon) {
-  fetchWeather(lat, lon, label || "Shared location");
-  return; // ⛔ stop auto-location
-}
+  function getRandomLandCoordinates() {
+    const r = LAND_REGIONS[Math.floor(Math.random() * LAND_REGIONS.length)];
+    return {
+      lat: (Math.random() * (r.latMax - r.latMin) + r.latMin).toFixed(4),
+      lon: (Math.random() * (r.lonMax - r.lonMin) + r.lonMin).toFixed(4)
+    };
+  }
+
+  randomBtn?.addEventListener("click", () => {
+    const { lat, lon } = getRandomLandCoordinates();
+    fetchWeather(lat, lon, "🎲 Random land location");
+    showMap(lat, lon, "🎲 Random land location");
+  });
+
+  /* =========================
+     MAP
+  ========================= */
+  let map = null;
+  let mapMarker = null;
+
+  function showMap(lat, lon, label) {
+    mapDiv.classList.remove("hidden");
+
+    if (!map) {
+      map = L.map("map").setView([lat, lon], 4);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap"
+      }).addTo(map);
+    } else {
+      map.setView([lat, lon], 4);
+    }
+
+    if (!mapMarker) {
+      mapMarker = L.marker([lat, lon]).addTo(map);
+    } else {
+      mapMarker.setLatLng([lat, lon]);
+    }
+
+    mapMarker.bindPopup(label).openPopup();
+  }
+
+  function hideMap() {
+    mapDiv.classList.add("hidden");
+  }
+
+  /* =========================
+     SHARED LINK LOAD
+  ========================= */
+  const params = new URLSearchParams(location.search);
+  const lat = params.get("lat");
+  const lon = params.get("lon");
+  const label = params.get("label");
+
+  if (lat && lon) {
+    sharedLinkUsed = true;
+    fetchWeather(lat, lon, label || "Shared location");
+  }
 
   /* =========================
      AUTO LOCATION
   ========================= */
   setTimeout(() => {
-    if (autoLocationTried) return;
+    if (autoLocationTried || sharedLinkUsed) return;
     autoLocationTried = true;
 
     navigator.geolocation?.getCurrentPosition(
