@@ -291,26 +291,41 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      SHARE
   ========================= */
-  shareBtn?.addEventListener("click", async () => {
-    if (!lastCoords) return;
+  shareBtn?.addEventListener("click", () => {
+  if (!lastCoords) {
+    alert("Load a location first 🌍");
+    return;
+  }
 
-    const params = new URLSearchParams(lastCoords);
-    const url = `${location.origin}${location.pathname}?${params}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Nimbus weather",
-          text: `Weather for ${lastCoords.label}`,
-          url
-        });
-        return;
-      } catch {}
-    }
-
-    await navigator.clipboard.writeText(url);
-    alert("🔗 Link copied to clipboard!");
+  const params = new URLSearchParams({
+    lat: lastCoords.lat,
+    lon: lastCoords.lon,
+    label: lastCoords.label
   });
+
+  const shareUrl = `${location.origin}${location.pathname}?${params}`;
+
+  // 📱 Mobile share (must be direct)
+  if (navigator.share) {
+    navigator.share({
+      title: "Nimbus weather",
+      text: `Weather for ${lastCoords.label}`,
+      url: shareUrl
+    }).catch(() => {
+      // fallback if user cancels
+    });
+    return;
+  }
+
+  // 💻 Desktop / fallback
+  try {
+    navigator.clipboard.writeText(shareUrl);
+    alert("🔗 Link copied to clipboard!");
+  } catch {
+    prompt("Copy this link:", shareUrl);
+  }
+});
+
 
   /* =========================
      SEARCH
