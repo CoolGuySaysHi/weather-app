@@ -6,7 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const sharedLat = urlParams.get("lat");
   const sharedLon = urlParams.get("lon");
   const sharedLabel = urlParams.get("label");
-  const isSharedLink = Boolean(sharedLat && sharedLon);
+  const isSharedLink = sharedLat !== null && sharedLon !== null;
+
 
   if (isSharedLink) {
     fetchWeather(sharedLat, sharedLon, sharedLabel || "Shared location");
