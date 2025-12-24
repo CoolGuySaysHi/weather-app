@@ -2,6 +2,16 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      ELEMENTS
   ========================= */
+  const urlParams = new URLSearchParams(location.search);
+  const sharedLat = urlParams.get("lat");
+  const sharedLon = urlParams.get("lon");
+  const sharedLabel = urlParams.get("label");
+
+  if (isSharedLink) {
+    fetchWeather(sharedLat, sharedLon, sharedLabel || "Shared location");
+  }
+
+
   const cityInput = document.getElementById("cityInput");
   const searchBtn = document.getElementById("searchBtn");
   const locationBtn = document.getElementById("getWeather");
@@ -431,13 +441,14 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      AUTO LOCATION
   ========================= */
-  setTimeout(() => {
-    if (autoLocationTried || sharedLinkUsed) return;
-    autoLocationTried = true;
-
-    navigator.geolocation?.getCurrentPosition(
-      pos => fetchWeather(pos.coords.latitude, pos.coords.longitude, "Your Location"),
-      () => {}
-    );
-  }, 800);
+ if (!isSharedLink) {
+  navigator.geolocation?.getCurrentPosition(
+    pos => fetchWeather(
+      pos.coords.latitude,
+      pos.coords.longitude,
+      "Your Location"
+    ),
+    () => {}
+  );
+}
 });
