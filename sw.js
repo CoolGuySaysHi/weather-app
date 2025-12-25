@@ -3,7 +3,7 @@
    Auto-updating & safe
 ========================= */
 
-const CACHE_VERSION = "nimbus-v6";
+const CACHE_VERSION = "nimbus-v7";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
